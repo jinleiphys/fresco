@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRESCO Transfer Reaction Generator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3a5a7d;
+            --secondary-color: #5d89b3;
+            --accent-color: #f4a261;
+            --light-color: #f5f8fa;
+            --dark-color: #2c3e50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--light-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .header {
+            padding: 2rem 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Glassmorphism card style */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            padding: 2rem;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .glass-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 0.75rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            padding: 0.7rem 1rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-text {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            font-weight: 600;
+            padding: 0.75rem 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .output-area {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 1.5rem;
+            font-family: 'Courier New', Courier, monospace;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tooltip-inner {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            padding: 8px 12px;
+            max-width: 300px;
+        }
+
+        /* Custom tooltip */
+        .custom-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .custom-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 250px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+
+        .custom-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .custom-tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+        }
+
+        .footer {
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+
+        .footer a {
+            color: white;
+            opacity: 0.8;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .footer a:hover {
+            opacity: 1;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .home-link {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .home-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .potential-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .potential-card h4 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .add-potential-btn, .add-overlap-btn, .add-cfp-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px dashed rgba(255, 255, 255, 0.4);
+            color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-potential-btn:hover, .add-overlap-btn:hover, .add-cfp-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .remove-potential, .remove-overlap, .remove-cfp {
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .remove-potential:hover, .remove-overlap:hover, .remove-cfp:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+            
+            .glass-card {
+                padding: 1.5rem;
+            }
+
+            .custom-tooltip .tooltip-text {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-link">
+        <i class="fas fa-home me-2"></i>Home
+    </a>
+
+    <!-- Header Section -->
+    <header class="header">
+        <div class="container">
+            <h1><i class="fas fa-exchange-alt me-2"></i>Transfer Reaction</h1>
+            <p>Generate FRESCO input files for nucleon transfer reactions</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <form id="transfer-form">
+            <!-- General Parameters -->
+            <div class="glass-card">
+                <h3><i class="fas fa-cogs me-2"></i>General FRESCO Parameters</h3>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="header" class="form-label">
+                            Header
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Description of the calculation that will appear at the top of the input file.</span>
+                            </span>
+                        </label>
+                        <input type="text" class="form-control" id="header" placeholder="16O(d,p)17O transfer reaction">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="hcm" class="form-label">
+                            Integration step size (hcm)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Step size for integration in center-of-mass frame. Smaller values give more accurate results but slower calculations (typical: 0.05-0.1).</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="hcm" value="0.05" step="0.01">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="rmatch" class="form-label">
+                            Matching radius (rmatch)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">The radius at which the internal and asymptotic solutions are matched (typical: 20-40 fm).</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="rmatch" value="30">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="jtmax" class="form-label">
+                            Max angular momentum (jtmax)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Maximum angular momentum included in the calculation. Higher values needed for higher energies and heavier systems.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="jtmax" value="50">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="absend" class="form-label">
+                            Convergence parameter (absend)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Convergence criterion. Smaller values give more precise results (typical: 0.001-0.01).</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="absend" value="0.01" step="0.001">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="thmax" class="form-label">
+                            Maximum angle (thmax)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Maximum scattering angle in degrees.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="thmax" value="180">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="thinc" class="form-label">
+                            Angle increment (thinc)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Increment between calculated scattering angles in degrees.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="thinc" value="1.0" step="0.1">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="elab" class="form-label">
+                            Laboratory energy (elab)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Laboratory energy of the projectile in MeV. For multi-energy calculations, use comma-separated values.</span>
+                            </span>
+                        </label>
+                        <input type="text" class="form-control" id="elab" value="20.0">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="iter" class="form-label">
+                            Number of iterations (iter)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Number of iterations for solving coupled equations. For simple transfer reactions, a value of 1 is sufficient (DWBA).</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="iter" value="1" min="1">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="nnu" class="form-label">
+                            Angular integration points (nnu)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Number of Gaussian integration points for angular integration in transfer form factors. Should be a multiple of 6 (24 or 36 recommended).</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="nnu" value="36" step="6">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Partition Parameters -->
+            <div class="glass-card">
+                <h3><i class="fas fa-project-diagram me-2"></i>Partition Parameters</h3>
+                
+                <!-- Initial Partition -->
+                <div class="row mb-4">
+                    <div class="col-12 mb-3">
+                        <h4>Initial Partition</h4>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="proj-initial" class="form-label">
+                            Projectile
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Symbol of the projectile nucleus.</span>
+                            </span>
+                        </label>
+                        <input type="text" class="form-control" id="proj-initial" value="d">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="proj-mass-initial" class="form-label">
+                            Projectile Mass (amu)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Mass of projectile in atomic mass units.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="proj-mass-initial" value="2.014" step="0.001">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="proj-z-initial" class="form-label">
+                            Projectile Z
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Atomic number of the projectile.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="proj-z-initial" value="1">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="proj-spin-initial" class="form-label">
+                            Projectile Spin
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Spin of the projectile ground state in units of ħ.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="proj-spin-initial" value="1.0" step="0.5">
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <label for="targ-initial" class="form-label">
+                            Target
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Symbol of the target nucleus.</span>
+                            </span>
+                        </label>
+                        <input type="text" class="form-control" id="targ-initial" value="16O">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="targ-mass-initial" class="form-label">
+                            Target Mass (amu)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Mass of target in atomic mass units.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="targ-mass-initial" value="15.995" step="0.001">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="targ-z-initial" class="form-label">
+                            Target Z
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Atomic number of the target.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="targ-z-initial" value="8">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="targ-spin-initial" class="form-label">
+                            Target Spin
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Spin of the target ground state in units of ħ.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="targ-spin-initial" value="0.0" step="0.5">
+                    </div>
+                </div>
+
+                <!-- Final Partition -->
+                <div class="row mb-4">
+                    <div class="col-12 mb-3">
+                        <h4>Final Partition</h4>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="proj-final" class="form-label">
+                            Ejectile
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Symbol of the ejectile nucleus (after transfer).</span>
+                            </span>
+                        </label>
+                        <input type="text" class="form-control" id="proj-final" value="p">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="proj-mass-final" class="form-label">
+                            Ejectile Mass (amu)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Mass of ejectile in atomic mass units.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="proj-mass-final" value="1.008" step="0.001">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="proj-z-final" class="form-label">
+                            Ejectile Z
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Atomic number of the ejectile.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="proj-z-final" value="1">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="proj-spin-final" class="form-label">
+                            Ejectile Spin
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Spin of the ejectile ground state in units of ħ.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="proj-spin-final" value="0.5" step="0.5">
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <label for="targ-final" class="form-label">
+                            Residual
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Symbol of the residual nucleus (after transfer).</span>
+                            </span>
+                        </label>
+                        <input type="text" class="form-control" id="targ-final" value="17O">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="targ-mass-final" class="form-label">
+                            Residual Mass (amu)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Mass of residual nucleus in atomic mass units.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="targ-mass-final" value="16.999" step="0.001">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="targ-z-final" class="form-label">
+                            Residual Z
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Atomic number of the residual nucleus.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="targ-z-final" value="8">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="targ-spin-final" class="form-label">
+                            Residual Spin
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Spin of the residual nucleus ground state in units of ħ.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="targ-spin-final" value="2.5" step="0.5">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="qval" class="form-label">
+                            Q-value (MeV)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Q-value for the transfer reaction in MeV. Positive for exothermic reactions.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="qval" value="3.5" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Potentials Section -->
+            <div class="glass-card">
+                <h3><i class="fas fa-atom me-2"></i>Optical Potentials</h3>
+                
+                <!-- Initial Channel Optical Potential -->
+                <div class="potential-card" id="initial-potential">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Initial Channel Optical Potential</h4>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="rc-initial" class="form-label">
+                                Coulomb radius (rc)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Coulomb radius parameter in fm. Typically 1.2-1.3 times A^(1/3).</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rc-initial" value="1.3" step="0.1">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="v-initial" class="form-label">
+                                Real depth (V)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Depth of the real part of the potential in MeV.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="v-initial" value="100.0" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rv-initial" class="form-label">
+                                Real radius (r0)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Radius parameter for the real potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rv-initial" value="1.15" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="av-initial" class="form-label">
+                                Real diffuseness (a)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Diffuseness parameter for the real potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="av-initial" value="0.75" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="w-initial" class="form-label">
+                                Imaginary depth (W)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Depth of the imaginary part of the potential in MeV.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="w-initial" value="10.0" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rw-initial" class="form-label">
+                                Imaginary radius (rw)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Radius parameter for the imaginary potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rw-initial" value="1.25" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="aw-initial" class="form-label">
+                                Imaginary diffuseness (aw)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Diffuseness parameter for the imaginary potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="aw-initial" value="0.75" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="vso-initial" class="form-label">
+                                Spin-orbit depth (Vso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Depth of the spin-orbit potential in MeV.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="vso-initial" value="6.0" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rso-initial" class="form-label">
+                                Spin-orbit radius (rso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Radius parameter for the spin-orbit potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rso-initial" value="1.15" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="aso-initial" class="form-label">
+                                Spin-orbit diffuseness (aso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Diffuseness parameter for the spin-orbit potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="aso-initial" value="0.75" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Final Channel Optical Potential -->
+                <div class="potential-card" id="final-potential">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Final Channel Optical Potential</h4>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="rc-final" class="form-label">
+                                Coulomb radius (rc)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Coulomb radius parameter in fm. Typically 1.2-1.3 times A^(1/3).</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rc-final" value="1.3" step="0.1">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="v-final" class="form-label">
+                                Real depth (V)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Depth of the real part of the potential in MeV.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="v-final" value="50.0" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rv-final" class="form-label">
+                                Real radius (r0)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Radius parameter for the real potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rv-final" value="1.15" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="av-final" class="form-label">
+                                Real diffuseness (a)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Diffuseness parameter for the real potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="av-final" value="0.65" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="w-final" class="form-label">
+                                Imaginary depth (W)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Depth of the imaginary part of the potential in MeV.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="w-final" value="8.0" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rw-final" class="form-label">
+                                Imaginary radius (rw)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Radius parameter for the imaginary potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rw-final" value="1.25" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="aw-final" class="form-label">
+                                Imaginary diffuseness (aw)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Diffuseness parameter for the imaginary potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="aw-final" value="0.65" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="vso-final" class="form-label">
+                                Spin-orbit depth (Vso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Depth of the spin-orbit potential in MeV.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="vso-final" value="6.0" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rso-final" class="form-label">
+                                Spin-orbit radius (rso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Radius parameter for the spin-orbit potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rso-final" value="1.15" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="aso-final" class="form-label">
+                                Spin-orbit diffuseness (aso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Diffuseness parameter for the spin-orbit potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="aso-final" value="0.65" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Binding Potential for Transferred Nucleon -->
+                <div class="potential-card" id="binding-potential">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Binding Potential for Transferred Nucleon</h4>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="v-bind" class="form-label">
+                                Potential depth (V)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Depth of the binding potential in MeV. May be adjusted to give correct binding energy.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="v-bind" value="50.0" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rv-bind" class="form-label">
+                                Radius (r0)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Radius parameter for the binding potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rv-bind" value="1.25" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="av-bind" class="form-label">
+                                Diffuseness (a)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Diffuseness parameter for the binding potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="av-bind" value="0.65" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="vso-bind" class="form-label">
+                                Spin-orbit depth (Vso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Depth of the spin-orbit binding potential in MeV.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="vso-bind" value="6.0" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="rso-bind" class="form-label">
+                                Spin-orbit radius (rso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Radius parameter for the spin-orbit binding potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rso-bind" value="1.25" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="aso-bind" class="form-label">
+                                Spin-orbit diffuseness (aso)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Diffuseness parameter for the spin-orbit binding potential in fm.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="aso-bind" value="0.65" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overlap Parameters -->
+            <div class="glass-card">
+                <h3><i class="fas fa-link me-2"></i>Overlap Parameters</h3>
+                
+                <div id="overlap-container">
+                    <!-- Initial overlap will be added here -->
+                </div>
+                
+                <!-- Add Overlap Button -->
+                <div class="add-overlap-btn" id="add-overlap-btn">
+                    <i class="fas fa-plus me-2"></i>Add Overlap
+                </div>
+            </div>
+
+            <!-- Coupling Parameters -->
+            <div class="glass-card">
+                <h3><i class="fas fa-random me-2"></i>Coupling Parameters</h3>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <label for="coupling-kind" class="form-label">
+                            Coupling Type (KIND)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Type of transfer coupling. 7 for finite-range, 5 for zero-range, 6 for local-energy approximation.</span>
+                            </span>
+                        </label>
+                        <select class="form-select" id="coupling-kind">
+                            <option value="7">KIND=7 (Finite-Range)</option>
+                            <option value="5">KIND=5 (Zero-Range)</option>
+                            <option value="6">KIND=6 (Local-Energy Approximation)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3" id="zr-param-container" style="display: none;">
+                        <label for="d0-value" class="form-label">
+                            Zero-range constant (D0)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Zero-range strength parameter in MeV·fm^3/2. Typical value for (d,p) is around 125.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="d0-value" value="125.0" step="1.0">
+                    </div>
+                    <div class="col-md-4 mb-3" id="lea-param-container" style="display: none;">
+                        <label for="fnrng-value" class="form-label">
+                            Finite-range parameter (FNRNG)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Effective finite-range parameter for LEA in fm. Typical value for (d,p) is around 0.7.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="fnrng-value" value="0.7" step="0.1">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="postprior" class="form-label">
+                            Interaction Type
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Choose POST or PRIOR interaction formalism for finite-range transfer.</span>
+                            </span>
+                        </label>
+                        <select class="form-select" id="postprior">
+                            <option value="0">POST Interaction</option>
+                            <option value="1">PRIOR Interaction</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="cfp-container">
+                    <!-- CFP entries will be added here -->
+                </div>
+                
+                <!-- Add CFP Button -->
+                <div class="add-cfp-btn" id="add-cfp-btn">
+                    <i class="fas fa-plus me-2"></i>Add Spectroscopic Factor
+                </div>
+            </div>
+
+            <!-- Generate Button -->
+            <div class="text-center mt-4">
+                <button type="button" id="generate-btn" class="btn btn-primary btn-lg">
+                    <i class="fas fa-file-code me-2"></i>Generate Input File
+                </button>
+            </div>
+        </form>
+
+        <!-- Output Section -->
+        <div class="glass-card mt-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0"><i class="fas fa-code me-2"></i>Generated Input File</h3>
+                <div>
+                    <button id="copy-btn" class="action-btn me-2">
+                        <i class="fas fa-copy me-1"></i>Copy
+                    </button>
+                    <button id="download-btn" class="action-btn">
+                        <i class="fas fa-download me-1"></i>Download
+                    </button>
+                </div>
+            </div>
+            <pre id="output" class="output-area">Select parameters and click "Generate Input File" to create a FRESCO input file for transfer reactions.</pre>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>FRESCO Input Generator</h5>
+                    <p>A user-friendly web tool for generating input files for the FRESCO nuclear reaction code.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="fresco.pdf" target="_blank">FRESCO Documentation</a></li>
+                        <li><a href="https://github.com/I-Thompson/fresco" target="_blank">FRESCO GitHub Repository</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4" style="border-color: rgba(255, 255, 255, 0.1);">
+            <div class="text-center">
+                <p class="mb-0">© 2025 FRESCO Input Generator. Created for educational and research purposes.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Overlap Template -->
+    <template id="overlap-template">
+        <div class="potential-card overlap-card" data-overlap-id="">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Single-Particle Overlap <span class="overlap-number"></span></h4>
+                <a href="#" class="remove-overlap"><i class="fas fa-times"></i></a>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Transfer Direction
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Direction of the transferred nucleon.</span>
+                        </span>
+                    </label>
+                    <select class="form-select overlap-direction">
+                        <option value="1">Projectile → Target</option>
+                        <option value="2">Target → Projectile</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Binding Energy (BE)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Binding energy of the transferred nucleon in MeV.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control overlap-be" value="8.0" step="0.1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Nodes (n)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Number of nodes in the radial wave function, excluding origin and infinity.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control overlap-nodes" value="1" min="1" step="1">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Orbital Angular Momentum (l)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Orbital angular momentum of the transferred nucleon.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control overlap-l" value="0" min="0" step="1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Spin (s)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Intrinsic spin of the transferred nucleon. Typically 0.5 for nucleons.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control overlap-spin" value="0.5" step="0.5">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Total Angular Momentum (j)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Total angular momentum of the transferred nucleon (j = l ± s).</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control overlap-j" value="0.5" step="0.5">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Binding Potential (kbpot)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Potential number for binding the transferred nucleon. Typically 3 for Projectile→Target and 4 for Target→Projectile.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control overlap-kbpot" value="3" min="1" step="1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Scaling Parameter (isc)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Type of scaling for the binding potential. 1 to vary potential depth to match BE.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control overlap-isc" value="1" min="0" step="1">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- CFP Template -->
+    <template id="cfp-template">
+        <div class="potential-card cfp-card" data-cfp-id="">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Spectroscopic Factor <span class="cfp-number"></span></h4>
+                <a href="#" class="remove-cfp"><i class="fas fa-times"></i></a>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Direction
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Direction of the transfer. IN=1 for projectile, IN=2 for target.</span>
+                        </span>
+                    </label>
+                    <select class="form-select cfp-direction">
+                        <option value="1">Projectile → Target (IN=1)</option>
+                        <option value="2">Target → Projectile (IN=2)</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Initial State (IA)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Index of the initial state (typically 1 for ground state).</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control cfp-ia" value="1" min="1" step="1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Final State (IB)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Index of the final state (typically 1 for ground state).</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control cfp-ib" value="1" min="1" step="1">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Overlap Form Factor (KN)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Index of the corresponding overlap form factor.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control cfp-kn" value="1" min="1" step="1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Spectroscopic Amplitude (A)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Spectroscopic amplitude (square root of spectroscopic factor).</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control cfp-a" value="1.0" step="0.01">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Overlap management
+            const overlapContainer = document.getElementById('overlap-container');
+            const addOverlapBtn = document.getElementById('add-overlap-btn');
+            const overlapTemplate = document.getElementById('overlap-template');
+            let overlapCount = 0;
+            
+            // CFP management
+            const cfpContainer = document.getElementById('cfp-container');
+            const addCfpBtn = document.getElementById('add-cfp-btn');
+            const cfpTemplate = document.getElementById('cfp-template');
+            let cfpCount = 0;
+            
+            // Coupling type selection
+            const couplingKind = document.getElementById('coupling-kind');
+            const zrParamContainer = document.getElementById('zr-param-container');
+            const leaParamContainer = document.getElementById('lea-param-container');
+            
+            // Handle coupling type change
+            couplingKind.addEventListener('change', function() {
+                if (this.value === '5') {
+                    // Zero-range
+                    zrParamContainer.style.display = 'block';
+                    leaParamContainer.style.display = 'none';
+                } else if (this.value === '6') {
+                    // LEA
+                    zrParamContainer.style.display = 'none';
+                    leaParamContainer.style.display = 'block';
+                } else {
+                    // Finite-range
+                    zrParamContainer.style.display = 'none';
+                    leaParamContainer.style.display = 'none';
+                }
+            });
+            
+            // Add an overlap
+            function addOverlap() {
+                overlapCount++;
+                
+                // Clone the template
+                const overlapNode = document.importNode(overlapTemplate.content, true);
+                
+                // Set unique IDs and update labels
+                const overlapCard = overlapNode.querySelector('.overlap-card');
+                overlapCard.dataset.overlapId = overlapCount;
+                overlapCard.querySelector('.overlap-number').textContent = overlapCount;
+                
+                // Set remove button action
+                overlapCard.querySelector('.remove-overlap').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    overlapCard.remove();
+                    updateOverlapNumbers();
+                });
+                
+                // Update kbpot based on direction
+                const directionSelect = overlapCard.querySelector('.overlap-direction');
+                const kbpotInput = overlapCard.querySelector('.overlap-kbpot');
+                
+                directionSelect.addEventListener('change', function() {
+                    if (this.value === '1') {
+                        kbpotInput.value = 3; // For Projectile→Target
+                    } else {
+                        kbpotInput.value = 4; // For Target→Projectile
+                    }
+                });
+                
+                // Append to container
+                overlapContainer.appendChild(overlapNode);
+                
+                return overlapCard;
+            }
+            
+            // Update numbering when an overlap is removed
+            function updateOverlapNumbers() {
+                const overlaps = overlapContainer.querySelectorAll('.overlap-card');
+                overlaps.forEach((overlap, index) => {
+                    overlap.querySelector('.overlap-number').textContent = index + 1;
+                    overlap.dataset.overlapId = index + 1;
+                });
+                overlapCount = overlaps.length;
+            }
+            
+            // Add a CFP (spectroscopic factor)
+            function addCfp() {
+                cfpCount++;
+                
+                // Clone the template
+                const cfpNode = document.importNode(cfpTemplate.content, true);
+                
+                // Set unique IDs and update labels
+                const cfpCard = cfpNode.querySelector('.cfp-card');
+                cfpCard.dataset.cfpId = cfpCount;
+                cfpCard.querySelector('.cfp-number').textContent = cfpCount;
+                
+                // Set remove button action
+                cfpCard.querySelector('.remove-cfp').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    cfpCard.remove();
+                    updateCfpNumbers();
+                });
+                
+                // Append to container
+                cfpContainer.appendChild(cfpNode);
+                
+                return cfpCard;
+            }
+            
+            // Update numbering when a CFP is removed
+            function updateCfpNumbers() {
+                const cfps = cfpContainer.querySelectorAll('.cfp-card');
+                cfps.forEach((cfp, index) => {
+                    cfp.querySelector('.cfp-number').textContent = index + 1;
+                    cfp.dataset.cfpId = index + 1;
+                });
+                cfpCount = cfps.length;
+            }
+            
+            // Add initial overlap and CFP
+            addOverlap();
+            addCfp();
+            
+            // Add overlap button listener
+            addOverlapBtn.addEventListener('click', function() {
+                addOverlap();
+            });
+            
+            // Add CFP button listener
+            addCfpBtn.addEventListener('click', function() {
+                addCfp();
+            });
+            
+            // Generate FRESCO input file
+            document.getElementById('generate-btn').addEventListener('click', function() {
+                generateInputFile();
+            });
+
+            // Copy to clipboard
+            document.getElementById('copy-btn').addEventListener('click', function() {
+                copyToClipboard();
+            });
+
+            // Download file
+            document.getElementById('download-btn').addEventListener('click', function() {
+                downloadInputFile();
+            });
+            
+            // Generate input file function
+            function generateInputFile() {
+                // Get form values - General parameters
+                const header = document.getElementById('header').value || '16O(d,p)17O transfer reaction';
+                const hcm = document.getElementById('hcm').value;
+                const rmatch = document.getElementById('rmatch').value;
+                const jtmax = document.getElementById('jtmax').value;
+                const absend = document.getElementById('absend').value;
+                const thmax = document.getElementById('thmax').value;
+                const thinc = document.getElementById('thinc').value;
+                const elab = document.getElementById('elab').value;
+                const iter = document.getElementById('iter').value;
+                const nnu = document.getElementById('nnu').value;
+                
+                // Initial partition parameters
+                const projInitial = document.getElementById('proj-initial').value;
+                const projMassInitial = document.getElementById('proj-mass-initial').value;
+                const projZInitial = document.getElementById('proj-z-initial').value;
+                const projSpinInitial = document.getElementById('proj-spin-initial').value;
+                const targInitial = document.getElementById('targ-initial').value;
+                const targMassInitial = document.getElementById('targ-mass-initial').value;
+                const targZInitial = document.getElementById('targ-z-initial').value;
+                const targSpinInitial = document.getElementById('targ-spin-initial').value;
+                
+                // Final partition parameters
+                const projFinal = document.getElementById('proj-final').value;
+                const projMassFinal = document.getElementById('proj-mass-final').value;
+                const projZFinal = document.getElementById('proj-z-final').value;
+                const projSpinFinal = document.getElementById('proj-spin-final').value;
+                const targFinal = document.getElementById('targ-final').value;
+                const targMassFinal = document.getElementById('targ-mass-final').value;
+                const targZFinal = document.getElementById('targ-z-final').value;
+                const targSpinFinal = document.getElementById('targ-spin-final').value;
+                const qval = document.getElementById('qval').value;
+                
+                // Get optical potentials
+                // Initial channel
+                const rcInitial = document.getElementById('rc-initial').value;
+                const vInitial = document.getElementById('v-initial').value;
+                const rvInitial = document.getElementById('rv-initial').value;
+                const avInitial = document.getElementById('av-initial').value;
+                const wInitial = document.getElementById('w-initial').value;
+                const rwInitial = document.getElementById('rw-initial').value;
+                const awInitial = document.getElementById('aw-initial').value;
+                const vsoInitial = document.getElementById('vso-initial').value;
+                const rsoInitial = document.getElementById('rso-initial').value;
+                const asoInitial = document.getElementById('aso-initial').value;
+                
+                // Final channel
+                const rcFinal = document.getElementById('rc-final').value;
+                const vFinal = document.getElementById('v-final').value;
+                const rvFinal = document.getElementById('rv-final').value;
+                const avFinal = document.getElementById('av-final').value;
+                const wFinal = document.getElementById('w-final').value;
+                const rwFinal = document.getElementById('rw-final').value;
+                const awFinal = document.getElementById('aw-final').value;
+                const vsoFinal = document.getElementById('vso-final').value;
+                const rsoFinal = document.getElementById('rso-final').value;
+                const asoFinal = document.getElementById('aso-final').value;
+                
+                // Binding potential
+                const vBind = document.getElementById('v-bind').value;
+                const rvBind = document.getElementById('rv-bind').value;
+                const avBind = document.getElementById('av-bind').value;
+                const vsoBind = document.getElementById('vso-bind').value;
+                const rsoBind = document.getElementById('rso-bind').value;
+                const asoBind = document.getElementById('aso-bind').value;
+                
+                // Coupling parameters
+                const couplingKindValue = document.getElementById('coupling-kind').value;
+                const postpriorValue = document.getElementById('postprior').value;
+                const d0Value = document.getElementById('d0-value').value;
+                const fnrngValue = document.getElementById('fnrng-value').value;
+                
+                // Build the input file content
+                let inputContent = `${header}
+NAMELIST
+ &FRESCO hcm=${hcm} rmatch=${rmatch} 
+	 jtmin=0.0 jtmax=${jtmax} absend=${absend} 
+	 thmin=0.00 thmax=${thmax} thinc=${thinc} 
+ 	 chans=1 smats=1 xstabl=1 
+	 elab=${elab} nnu=${nnu} iter=${iter} /
+
+ &PARTITION namep='${projInitial}' massp=${projMassInitial} zp=${projZInitial} 
+ 	    namet='${targInitial}' masst=${targMassInitial} zt=${targZInitial} nex=1  /
+ &STATES jp=${projSpinInitial} bandp=1 ep=0.0000 cpot=1 jt=${targSpinInitial} bandt=1 et=0.0000  /
+
+ &PARTITION namep='${projFinal}' massp=${projMassFinal} zp=${projZFinal} 
+ 	    namet='${targFinal}' masst=${targMassFinal} zt=${targZFinal} qval=${qval} nex=1  /
+ &STATES jp=${projSpinFinal} bandp=1 ep=0.0000 cpot=2 jt=${targSpinFinal} bandt=1 et=0.0000  /
+ &partition /
+
+ &POT kp=1 ap=${projMassInitial} at=${targMassInitial} rc=${rcInitial}  /
+ &POT kp=1 type=1 p1=${vInitial} p2=${rvInitial} p3=${avInitial} p4=${wInitial} p5=${rwInitial} p6=${awInitial}  /
+ &POT kp=1 type=3 p1=${vsoInitial} p2=${rsoInitial} p3=${asoInitial}  /
+
+ &POT kp=2 ap=${projMassFinal} at=${targMassFinal} rc=${rcFinal}  /
+ &POT kp=2 type=1 p1=${vFinal} p2=${rvFinal} p3=${avFinal} p4=${wFinal} p5=${rwFinal} p6=${awFinal}  /
+ &POT kp=2 type=3 p1=${vsoFinal} p2=${rsoFinal} p3=${asoFinal}  /
+
+ &POT kp=3 at=${targMassInitial} rc=1.25  /
+ &POT kp=3 type=1 p1=${vBind} p2=${rvBind} p3=${avBind}  /
+ &POT kp=3 type=3 p1=${vsoBind} p2=${rsoBind} p3=${asoBind}  /
+
+ &POT kp=4 at=${projMassInitial} rc=1.25  /
+ &POT kp=4 type=1 p1=${vBind} p2=${rvBind} p3=${avBind}  /
+ &POT kp=4 type=3 p1=${vsoBind} p2=${rsoBind} p3=${asoBind}  /
+ &pot /`;
+
+                // Add overlaps
+                inputContent += `\n\n`;
+                
+                const overlaps = overlapContainer.querySelectorAll('.overlap-card');
+                overlaps.forEach((overlap, index) => {
+                    const overlapDirection = overlap.querySelector('.overlap-direction').value;
+                    const overlapBe = overlap.querySelector('.overlap-be').value;
+                    const overlapNodes = overlap.querySelector('.overlap-nodes').value;
+                    const overlapL = overlap.querySelector('.overlap-l').value;
+                    const overlapSpin = overlap.querySelector('.overlap-spin').value;
+                    const overlapJ = overlap.querySelector('.overlap-j').value;
+                    const overlapKbpot = overlap.querySelector('.overlap-kbpot').value;
+                    const overlapIsc = overlap.querySelector('.overlap-isc').value;
+                    
+                    inputContent += ` &OVERLAP kn1=${index+1} ic1=1 ic2=2 in=${overlapDirection} kind=0 nn=${overlapNodes} l=${overlapL} sn=${overlapSpin} j=${overlapJ} kbpot=${overlapKbpot} be=${overlapBe} isc=${overlapIsc}  /\n`;
+                });
+                
+                inputContent += ` &overlap /`;
+                
+                // Add coupling
+                inputContent += `\n\n`;
+                
+                let zrParams = '';
+                if (couplingKindValue === '5') {
+                    zrParams = ` p1=${d0Value} p2=0.0`;
+                } else if (couplingKindValue === '6') {
+                    zrParams = ` p2=${fnrngValue}`;
+                }
+                
+                inputContent += ` &COUPLING icto=2 icfrom=1 kind=${couplingKindValue} ip1=${postpriorValue} ip2=0 ip3=0${zrParams} /\n`;
+                
+                // Add CFPs
+                const cfps = cfpContainer.querySelectorAll('.cfp-card');
+                cfps.forEach((cfp) => {
+                    const cfpDirection = cfp.querySelector('.cfp-direction').value;
+                    const cfpIa = cfp.querySelector('.cfp-ia').value;
+                    const cfpIb = cfp.querySelector('.cfp-ib').value;
+                    const cfpKn = cfp.querySelector('.cfp-kn').value;
+                    const cfpA = cfp.querySelector('.cfp-a').value;
+                    
+                    inputContent += `   &cfp in=${cfpDirection} ib=${cfpIb} ia=${cfpIa} kn=${cfpKn} a=${cfpA}  /\n`;
+                });
+                
+                inputContent += ` &COUPLING /`;
+
+                // Update output area
+                document.getElementById('output').textContent = inputContent;
+            }
+            
+            // Copy to clipboard function
+            function copyToClipboard() {
+                const outputText = document.getElementById('output').textContent;
+                navigator.clipboard.writeText(outputText).then(
+                    function() {
+                        // Success message
+                        const copyBtn = document.getElementById('copy-btn');
+                        const originalText = copyBtn.innerHTML;
+                        copyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                        
+                        setTimeout(function() {
+                            copyBtn.innerHTML = originalText;
+                        }, 2000);
+                    },
+                    function() {
+                        alert('Failed to copy to clipboard');
+                    }
+                );
+            }
+            
+            // Download input file function
+            function downloadInputFile() {
+                const outputText = document.getElementById('output').textContent;
+                const projInitial = document.getElementById('proj-initial').value;
+                const targInitial = document.getElementById('targ-initial').value;
+                const projFinal = document.getElementById('proj-final').value;
+                const fileName = `${targInitial}_${projInitial}-${projFinal}_transfer.in`;
+                
+                const blob = new Blob([outputText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(function() {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+            }
+        });
+    </script>
+</body>
+</html>

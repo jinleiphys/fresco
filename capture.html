@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRESCO Capture Reaction Generator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3a5a7d;
+            --secondary-color: #5d89b3;
+            --accent-color: #f4a261;
+            --light-color: #f5f8fa;
+            --dark-color: #2c3e50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--light-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .header {
+            padding: 2rem 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Glassmorphism card style */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            padding: 2rem;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .glass-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 0.75rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            padding: 0.7rem 1rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-text {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            font-weight: 600;
+            padding: 0.75rem 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .output-area {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 1.5rem;
+            font-family: 'Courier New', Courier, monospace;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tooltip-inner {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            padding: 8px 12px;
+            max-width: 300px;
+        }
+
+        /* Custom tooltip */
+        .custom-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .custom-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 250px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+
+        .custom-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .custom-tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+        }
+
+        .footer {
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+
+        .footer a {
+            color: white;
+            opacity: 0.8;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .footer a:hover {
+            opacity: 1;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .home-link {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .home-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .potential-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .potential-card h4 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .add-potential-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px dashed rgba(255, 255, 255, 0.4);
+            color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-potential-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .remove-potential {
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .remove-potential:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+            
+            .glass-card {
+                padding: 1.5rem;
+            }
+
+            .custom-tooltip .tooltip-text {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-link">
+        <i class="fas fa-home me-2"></i>Home
+    </a>
+
+    <!-- Header Section -->
+    <header class="header">
+        <div class="container">
+            <h1><i class="fas fa-atom me-2"></i>Capture Reaction</h1>
+            <p>Generate FRESCO input files for radiative capture reactions with electromagnetic transitions</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <form id="capture-form">
+            <!-- General Parameters -->
+            <div class="glass-card">
+                <h3><i class="fas fa-cogs me-2"></i>General FRESCO Parameters</h3>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="header" class="form-label">
+                            Header
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Description of the calculation that will appear at the top of the input file.</span>
+                            </span>
+                        </label>
+                        <input type="text" class="form-control" id="header" placeholder="14C(n,g)15C E1 only">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="hcm" class="form-label">
+                            Integration step size (hcm)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Step size for integration in center-of-mass frame. Smaller values give more accurate results but slower calculations (typical: 0.05-0.1).</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="hcm" value="0.1" step="0.01">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="rmatch" class="form-label">
+                            Matching radius (rmatch)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">The radius at which the internal and asymptotic solutions are matched (typical: 20-100 fm for capture).</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="rmatch" value="30">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="jtmax" class="form-label">
+                            Max angular momentum (jtmax)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Maximum angular momentum included in the calculation. For capture reactions, typically around 5-10 is sufficient.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="jtmax" value="5">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="absend" class="form-label">
+                            Convergence parameter (absend)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Convergence criterion. Use negative value to calculate all partial waves up to jtmax.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="absend" value="-1" step="0.001">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="thmax" class="form-label">
+                            Maximum angle (thmax)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Maximum scattering angle in degrees. For capture reactions, set to 0 for total cross sections only.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="thmax" value="0">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="thinc" class="form-label">
+                            Angle increment (thinc)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Increment between calculated scattering angles in degrees.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="thinc" value="1.0" step="0.1">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="elab" class="form-label">
+                            Laboratory energy (elab)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Laboratory energy of the projectile in MeV. For multi-energy calculations, use comma-separated values.</span>
+                            </span>
+                        </label>
+                        <input type="text" class="form-control" id="elab" value="0.005, 4.005">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="iter" class="form-label">
+                            Number of iterations (iter)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Number of iterations for solving coupled equations. For capture reactions, a value of 1 is usually sufficient.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="iter" value="1" min="1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Partitions Section -->
+            <div class="glass-card">
+                <h3><i class="fas fa-project-diagram me-2"></i>Reaction Partitions</h3>
+                
+                <!-- Initial Partition -->
+                <div class="potential-card">
+                    <h4>Initial Partition (Projectile + Target)</h4>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h5 class="mb-3">Projectile</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="projectile" class="form-label">
+                                        Symbol
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Symbol of the projectile nucleus (e.g., n, p, He3, etc.).</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" class="form-control" id="projectile" value="neutron">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="proj-mass" class="form-label">
+                                        Mass (amu)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Mass of projectile in atomic mass units.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="proj-mass" value="1.0087" step="0.0001">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="proj-z" class="form-label">
+                                        Charge (Z)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Atomic number of the projectile.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="proj-z" value="0">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="proj-spin" class="form-label">
+                                        Spin
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Spin of the projectile in units of ħ.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="proj-spin" value="0.5" step="0.5">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5 class="mb-3">Target</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="target" class="form-label">
+                                        Symbol
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Symbol of the target nucleus.</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" class="form-control" id="target" value="14C">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="targ-mass" class="form-label">
+                                        Mass (amu)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Mass of target in atomic mass units.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="targ-mass" value="14.0032" step="0.0001">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="targ-z" class="form-label">
+                                        Charge (Z)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Atomic number of the target.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="targ-z" value="6">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="targ-spin" class="form-label">
+                                        Spin
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Spin of the target in units of ħ.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="targ-spin" value="0.0" step="0.5">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Final Partition -->
+                <div class="potential-card">
+                    <h4>Final Partition (Gamma + Residual)</h4>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h5 class="mb-3">Photon</h5>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="gamma-type" class="form-label">
+                                        Photon Symbol
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">The symbol for the photon. Usually "Gamma".</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" class="form-control" id="gamma-type" value="Gamma" readonly>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="gamma-mass" class="form-label">
+                                        Mass (amu)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Mass of photon is zero.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="gamma-mass" value="0" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="gamma-z" class="form-label">
+                                        Charge (Z)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Charge of photon is zero.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="gamma-z" value="0" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5 class="mb-3">Residual Nucleus</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="residual" class="form-label">
+                                        Symbol
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Symbol of the residual nucleus.</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" class="form-control" id="residual" value="15C">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="res-mass" class="form-label">
+                                        Mass (amu)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Mass of residual nucleus in atomic mass units.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="res-mass" value="15.0106" step="0.0001">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="res-z" class="form-label">
+                                        Charge (Z)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Atomic number of the residual nucleus.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="res-z" value="6">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="res-spin" class="form-label">
+                                        Spin
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Spin of the residual nucleus in units of ħ.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="res-spin" value="0.5" step="0.5">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="qval" class="form-label">
+                                Q-value (MeV)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">The Q-value (energy release) for the capture reaction in MeV.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="qval" value="1.218" step="0.001">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Electromagnetic Transition Parameters -->
+            <div class="glass-card">
+                <h3><i class="fas fa-bolt me-2"></i>Electromagnetic Transition</h3>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="em-mult" class="form-label">
+                            Multipolarity
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">The multipolarity of the electromagnetic transition (e.g., E1, M1).</span>
+                            </span>
+                        </label>
+                        <select class="form-select" id="em-mult">
+                            <option value="1">E1 only</option>
+                            <option value="2">M1 only</option>
+                            <option value="3">E2 only</option>
+                            <option value="4">E1 + M1</option>
+                            <option value="5">E1 + E2</option>
+                            <option value="6">All multipoles up to E2</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="gamma-spin" class="form-label">
+                            Photon Spin
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">The spin of the photon (always 1.0).</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="gamma-spin" value="1.0" readonly>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="binding-energy" class="form-label">
+                            Binding Energy (MeV)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Binding energy of the captured particle in MeV.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="binding-energy" value="1.218" step="0.001">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Potentials Section -->
+            <div class="glass-card">
+                <h3><i class="fas fa-atom me-2"></i>Optical Potential Parameters</h3>
+                
+                <!-- Coulomb Potential -->
+                <div class="potential-card" id="coulomb-potential">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Coulomb Potential</h4>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="rc" class="form-label">
+                                Coulomb radius (rc)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Coulomb radius parameter in fm. Typically 1.2-1.3 times A^(1/3).</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="rc" value="1.3" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Optical Potential -->
+                <div class="potential-card">
+                    <h4>Optical Potential</h4>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h5>Real Volume</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="v-depth" class="form-label">
+                                        Depth (V)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Depth of the real volume potential in MeV.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="v-depth" value="57.0" step="0.1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="v-radius" class="form-label">
+                                        Radius (r0)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Radius parameter for the real volume potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="v-radius" value="1.7" step="0.1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="v-diffuse" class="form-label">
+                                        Diffuseness (a)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Diffuseness parameter for the real volume potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="v-diffuse" value="0.7" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5>Imaginary Volume</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="w-depth" class="form-label">
+                                        Depth (W)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Depth of the imaginary volume potential in MeV.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="w-depth" value="0.0" step="0.1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="w-radius" class="form-label">
+                                        Radius (r0)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Radius parameter for the imaginary volume potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="w-radius" value="1.7" step="0.1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="w-diffuse" class="form-label">
+                                        Diffuseness (a)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Diffuseness parameter for the imaginary volume potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="w-diffuse" value="0.5" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6 mb-3">
+                            <h5>Spin-Orbit</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="vso-depth" class="form-label">
+                                        Depth (Vso)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Depth of the spin-orbit potential in MeV.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="vso-depth" value="0.0" step="0.1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="vso-radius" class="form-label">
+                                        Radius (r0)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Radius parameter for the spin-orbit potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="vso-radius" value="1.7" step="0.1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="vso-diffuse" class="form-label">
+                                        Diffuseness (a)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Diffuseness parameter for the spin-orbit potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="vso-diffuse" value="0.5" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bound State Potential -->
+                <div class="potential-card">
+                    <h4>Bound State Potential</h4>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h5>Real Volume</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="bs-v-depth" class="form-label">
+                                        Depth (V)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Depth of the real volume potential in MeV.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="bs-v-depth" value="55.77" step="0.01">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="bs-v-radius" class="form-label">
+                                        Radius (r0)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Radius parameter for the real volume potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="bs-v-radius" value="1.223" step="0.001">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="bs-v-diffuse" class="form-label">
+                                        Diffuseness (a)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Diffuseness parameter for the real volume potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="bs-v-diffuse" value="0.5" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5>Spin-Orbit</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="bs-vso-depth" class="form-label">
+                                        Depth (Vso)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Depth of the spin-orbit potential in MeV.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="bs-vso-depth" value="5.0" step="0.1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="bs-vso-radius" class="form-label">
+                                        Radius (r0)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Radius parameter for the spin-orbit potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="bs-vso-radius" value="1.223" step="0.001">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="bs-vso-diffuse" class="form-label">
+                                        Diffuseness (a)
+                                        <span class="custom-tooltip">
+                                            <i class="fas fa-info-circle ms-1"></i>
+                                            <span class="tooltip-text">Diffuseness parameter for the spin-orbit potential in fm.</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" class="form-control" id="bs-vso-diffuse" value="0.5" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4 mb-3">
+                            <label for="bs-n" class="form-label">
+                                Nodes (n)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Number of nodes in the bound state wave function (not including origin or infinity).</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="bs-n" value="2" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="bs-l" class="form-label">
+                                Orbital Angular Momentum (l)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Orbital angular momentum of the captured particle in the bound state.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="bs-l" value="0" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="bs-j" class="form-label">
+                                Total Angular Momentum (j)
+                                <span class="custom-tooltip">
+                                    <i class="fas fa-info-circle ms-1"></i>
+                                    <span class="tooltip-text">Total angular momentum (l+s) of the captured particle in the bound state.</span>
+                                </span>
+                            </label>
+                            <input type="number" class="form-control" id="bs-j" value="0.5" step="0.5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate Button -->
+            <div class="text-center mt-4">
+                <button type="button" id="generate-btn" class="btn btn-primary btn-lg">
+                    <i class="fas fa-file-code me-2"></i>Generate Input File
+                </button>
+            </div>
+        </form>
+
+        <!-- Output Section -->
+        <div class="glass-card mt-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0"><i class="fas fa-code me-2"></i>Generated Input File</h3>
+                <div>
+                    <button id="copy-btn" class="action-btn me-2">
+                        <i class="fas fa-copy me-1"></i>Copy
+                    </button>
+                    <button id="download-btn" class="action-btn">
+                        <i class="fas fa-download me-1"></i>Download
+                    </button>
+                </div>
+            </div>
+            <pre id="output" class="output-area">Select parameters and click "Generate Input File" to create a FRESCO input file for capture reactions.</pre>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>FRESCO Input Generator</h5>
+                    <p>A user-friendly web tool for generating input files for the FRESCO nuclear reaction code.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="fresco.pdf" target="_blank">FRESCO Documentation</a></li>
+                        <li><a href="https://github.com/I-Thompson/fresco" target="_blank">FRESCO GitHub Repository</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4" style="border-color: rgba(255, 255, 255, 0.1);">
+            <div class="text-center">
+                <p class="mb-0">© 2025 FRESCO Input Generator. Created for educational and research purposes.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set the binding energy same as Q-value initially
+            document.getElementById('binding-energy').value = document.getElementById('qval').value;
+            
+            // When Q-value changes, update binding energy
+            document.getElementById('qval').addEventListener('change', function() {
+                document.getElementById('binding-energy').value = this.value;
+            });
+            
+            // Generate FRESCO input file
+            document.getElementById('generate-btn').addEventListener('click', function() {
+                generateInputFile();
+            });
+
+            // Copy to clipboard
+            document.getElementById('copy-btn').addEventListener('click', function() {
+                copyToClipboard();
+            });
+
+            // Download file
+            document.getElementById('download-btn').addEventListener('click', function() {
+                downloadInputFile();
+            });
+            
+            // Generate input file function
+            function generateInputFile() {
+                // Get form values
+                const header = document.getElementById('header').value || document.getElementById('projectile').value + '(' + document.getElementById('target').value + ',g)' + document.getElementById('residual').value;
+                const hcm = document.getElementById('hcm').value;
+                const rmatch = document.getElementById('rmatch').value;
+                const jtmax = document.getElementById('jtmax').value;
+                const absend = document.getElementById('absend').value;
+                const thmax = document.getElementById('thmax').value;
+                const thinc = document.getElementById('thinc').value;
+                const elab = document.getElementById('elab').value;
+                const iter = document.getElementById('iter').value;
+                
+                const projectile = document.getElementById('projectile').value;
+                const projMass = document.getElementById('proj-mass').value;
+                const projZ = document.getElementById('proj-z').value;
+                const projSpin = document.getElementById('proj-spin').value;
+                
+                const target = document.getElementById('target').value;
+                const targMass = document.getElementById('targ-mass').value;
+                const targZ = document.getElementById('targ-z').value;
+                const targSpin = document.getElementById('targ-spin').value;
+                
+                const residual = document.getElementById('residual').value;
+                const resMass = document.getElementById('res-mass').value;
+                const resZ = document.getElementById('res-z').value;
+                const resSpin = document.getElementById('res-spin').value;
+                
+                const qval = document.getElementById('qval').value;
+                const rc = document.getElementById('rc').value;
+                
+                const vDepth = document.getElementById('v-depth').value;
+                const vRadius = document.getElementById('v-radius').value;
+                const vDiffuse = document.getElementById('v-diffuse').value;
+                const wDepth = document.getElementById('w-depth').value;
+                const wRadius = document.getElementById('w-radius').value;
+                const wDiffuse = document.getElementById('w-diffuse').value;
+                const vsoDepth = document.getElementById('vso-depth').value;
+                const vsoRadius = document.getElementById('vso-radius').value;
+                const vsoDiffuse = document.getElementById('vso-diffuse').value;
+                
+                const bsVDepth = document.getElementById('bs-v-depth').value;
+                const bsVRadius = document.getElementById('bs-v-radius').value;
+                const bsVDiffuse = document.getElementById('bs-v-diffuse').value;
+                const bsVsoDepth = document.getElementById('bs-vso-depth').value;
+                const bsVsoRadius = document.getElementById('bs-vso-radius').value;
+                const bsVsoDiffuse = document.getElementById('bs-vso-diffuse').value;
+                
+                const bsN = document.getElementById('bs-n').value;
+                const bsL = document.getElementById('bs-l').value;
+                const bsJ = document.getElementById('bs-j').value;
+                
+                const bindingEnergy = document.getElementById('binding-energy').value;
+                const gammaSpin = document.getElementById('gamma-spin').value;
+                const emMult = document.getElementById('em-mult').value;
+                
+                // Determine multipolarity based on selection
+                let multipolarity = '';
+                let ip1 = '-1';
+                let ip2 = '1';
+                
+                switch(emMult) {
+                    case '1': // E1 only
+                        multipolarity = 'E1 only';
+                        ip1 = '-1';
+                        ip2 = '1';
+                        break;
+                    case '2': // M1 only
+                        multipolarity = 'M1 only';
+                        ip1 = '-1';
+                        ip2 = '2';
+                        break;
+                    case '3': // E2 only
+                        multipolarity = 'E2 only';
+                        ip1 = '-2';
+                        ip2 = '1';
+                        break;
+                    case '4': // E1 + M1
+                        multipolarity = 'E1 + M1';
+                        ip1 = '1';
+                        ip2 = '0';
+                        break;
+                    case '5': // E1 + E2
+                        multipolarity = 'E1 + E2';
+                        ip1 = '2';
+                        ip2 = '1';
+                        break;
+                    case '6': // All multipoles up to E2
+                        multipolarity = 'All multipoles up to E2';
+                        ip1 = '2';
+                        ip2 = '0';
+                        break;
+                }
+                
+                // Build the input file content
+                let inputContent = `${header}
+NAMELIST
+ &FRESCO hcm=${hcm} rmatch=${rmatch} 
+         jtmin=0 jtmax=${jtmax} absend=${absend}
+         thmin=0 thmax=${thmax} thinc=${thinc} iter=${iter} 
+         elab(1)=${elab}/
+
+ &PARTITION namep='${projectile}' massp=${projMass} zp=${projZ} nex=1 namet='${target}' masst=${targMass} zt=${targZ} /
+ &STATES jp=${projSpin} ptyp=1 ep=0 cpot=1 jt=${targSpin} ptyt=1 et=0/
+
+ &PARTITION namep='Gamma' massp=0 zp=0 nex=1 namet='${residual}' masst=${resMass} zt=${resZ} qval=${qval} /
+ &STATES jp=${gammaSpin} ptyp=1 ep=0 cpot=3 jt=${resSpin} ptyt=1 et=0/
+ &partition / 
+
+ &Pot kp=1 type= 0 shape= 0 p(1:3)=   ${targMass}.0000   0.0000   ${rc} /                                     
+ &Pot kp=1 type= 1 shape= 0 p(1:3)=   ${vDepth}   ${vRadius}   ${vDiffuse} /`;
+
+                // Add imaginary potential if W > 0
+                if (wDepth > 0) {
+                    inputContent += `                                     
+ &Pot kp=1 type= 2 shape= 0 p(1:3)=   ${wDepth}   ${wRadius}   ${wDiffuse} /`;
+                }
+                
+                // Add spin-orbit potential if Vso > 0
+                if (vsoDepth > 0) {
+                    inputContent += `                                     
+ &Pot kp=1 type= 3 shape= 0 p(1:3)=   ${vsoDepth}   ${vsoRadius}   ${vsoDiffuse} /`;
+                }
+                
+                // Add bound state potential
+                inputContent += `                                     
+ &Pot kp=2 type= 0 shape= 0 p(1:3)=   ${targMass}.0000   0.0000   ${rc} /                                     
+ &Pot kp=2 type= 1 shape= 0 p(1:3)=   ${bsVDepth}   ${bsVRadius}   ${bsVDiffuse} /                                     
+ &Pot kp=2 type= 3 shape= 0 p(1:3)=   ${bsVsoDepth}   ${bsVsoRadius}   ${bsVsoDiffuse} /                                     
+ &pot / 
+
+ &OVERLAP kn1=1 ic1=1 ic2=2 in=-2 kind=0 nn=${bsN} l=${bsL} sn=${projSpin} j=${bsJ} kbpot=2 be=${bindingEnergy} isc=1 /
+ &overlap / 
+
+ &COUPLING icto=2 icfrom=1 kind=2 ip1=${ip1} ip2=${ip2}/
+ &cfp  in=2 ib=1 ia=1 kn=1  a=1.000     /
+`;
+
+                // Update output area
+                document.getElementById('output').textContent = inputContent;
+            }
+            
+            // Copy to clipboard function
+            function copyToClipboard() {
+                const outputText = document.getElementById('output').textContent;
+                navigator.clipboard.writeText(outputText).then(
+                    function() {
+                        // Success message
+                        const copyBtn = document.getElementById('copy-btn');
+                        const originalText = copyBtn.innerHTML;
+                        copyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                        
+                        setTimeout(function() {
+                            copyBtn.innerHTML = originalText;
+                        }, 2000);
+                    },
+                    function() {
+                        alert('Failed to copy to clipboard');
+                    }
+                );
+            }
+            
+            // Download input file function
+            function downloadInputFile() {
+                const outputText = document.getElementById('output').textContent;
+                const projectile = document.getElementById('projectile').value;
+                const target = document.getElementById('target').value;
+                const fileName = `${projectile}_${target}_capture.in`;
+                
+                const blob = new Blob([outputText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(function() {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+            }
+        });
+    </script>
+</body>
+</html>
