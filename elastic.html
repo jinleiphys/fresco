@@ -4,295 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FRESCO Elastic Scattering Generator</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #3a5a7d;
-            --secondary-color: #5d89b3;
-            --accent-color: #f4a261;
-            --light-color: #f5f8fa;
-            --dark-color: #2c3e50;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: var(--light-color);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        .header {
-            padding: 2rem 0;
-            text-align: center;
-            position: relative;
-        }
-
-        .header h1 {
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            font-size: 2.5rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 1.2rem;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* Glassmorphism card style */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
-            padding: 2rem;
-            transition: all 0.3s ease;
-            margin-bottom: 2rem;
-        }
-
-        .glass-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding-bottom: 0.75rem;
-        }
-
-        .form-label {
-            font-weight: 500;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-control, .form-select {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: white;
-            padding: 0.7rem 1rem;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus, .form-select:focus {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .form-text {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .btn-primary {
-            background: rgba(255, 255, 255, 0.25);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50px;
-            font-weight: 600;
-            padding: 0.75rem 2rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background: rgba(255, 255, 255, 0.35);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .output-area {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 1.5rem;
-            font-family: 'Courier New', Courier, monospace;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            color: #e0e0e0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .tooltip-inner {
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 8px;
-            padding: 8px 12px;
-            max-width: 300px;
-        }
-
-        /* Custom tooltip */
-        .custom-tooltip {
-            position: relative;
-            display: inline-block;
-        }
-
-        .custom-tooltip .tooltip-text {
-            visibility: hidden;
-            width: 250px;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            text-align: left;
-            border-radius: 6px;
-            padding: 8px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.85rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            line-height: 1.4;
-        }
-
-        .custom-tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .custom-tooltip .tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
-        }
-
-        .footer {
-            background: rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem 0;
-            margin-top: 4rem;
-        }
-
-        .footer a {
-            color: white;
-            opacity: 0.8;
-            text-decoration: none;
-            transition: opacity 0.3s;
-        }
-
-        .footer a:hover {
-            opacity: 1;
-        }
-
-        /* Action buttons */
-        .action-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            border-radius: 50px;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .home-link {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            border-radius: 50px;
-            padding: 0.5rem 1rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        .home-link:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .potential-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .potential-card h4 {
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 0.5rem;
-        }
-
-        .add-potential-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px dashed rgba(255, 255, 255, 0.4);
-            color: white;
-            border-radius: 10px;
-            padding: 1rem;
-            text-align: center;
-            margin-top: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .add-potential-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-        }
-
-        .remove-potential {
-            color: rgba(255, 255, 255, 0.7);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .remove-potential:hover {
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .header p {
-                font-size: 1rem;
-            }
-            
-            .glass-card {
-                padding: 1.5rem;
-            }
-
-            .custom-tooltip .tooltip-text {
-                width: 200px;
-            }
-        }
-    </style>
+    <meta name="description" content="Generate input files for FRESCO elastic scattering calculations. Configure projectile, target, and optical potential parameters.">
+    <meta name="keywords" content="FRESCO, elastic scattering, nuclear physics, optical potential">
+    <meta name="author" content="Jin Lei">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="assets/css/fresco-styles.css">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J60NE88WR1"></script>
 </head>
 <body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+        <i class="fas fa-moon" id="theme-icon"></i>
+    </button>
+
     <a href="index.html" class="home-link">
         <i class="fas fa-home me-2"></i>Home
     </a>
@@ -307,6 +35,29 @@
 
     <!-- Main Content -->
     <div class="container my-4">
+        <!-- Upload Section -->
+        <div class="glass-card mb-4">
+            <h3><i class="fas fa-upload me-2"></i>Upload Existing Input File</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="file-upload-elastic" class="form-label">
+                        Select FRESCO Input File
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Upload an existing FRESCO input file (.in, .inp, .txt) to populate the form fields automatically.</span>
+                        </span>
+                    </label>
+                    <input type="file" class="form-control" id="file-upload-elastic" accept=".in,.inp,.txt" onchange="handleFileUpload(event, 'elastic')">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="button" class="glass-btn" onclick="document.getElementById('file-upload-elastic').click()">
+                        <i class="fas fa-folder-open me-2"></i>Browse Files
+                    </button>
+                </div>
+            </div>
+            <small class="form-text">Supported formats: .in, .inp, .txt</small>
+        </div>
+
         <form id="elastic-form">
             <!-- General Parameters -->
             <div class="glass-card">
@@ -736,7 +487,8 @@
     </template>
 
     <!-- JavaScript Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="assets/js/fresco-common.js"></script>
     
     <!-- Custom JavaScript -->
     <script>

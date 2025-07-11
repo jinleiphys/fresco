@@ -4,295 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FRESCO Transfer Reaction Generator</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #3a5a7d;
-            --secondary-color: #5d89b3;
-            --accent-color: #f4a261;
-            --light-color: #f5f8fa;
-            --dark-color: #2c3e50;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: var(--light-color);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        .header {
-            padding: 2rem 0;
-            text-align: center;
-            position: relative;
-        }
-
-        .header h1 {
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            font-size: 2.5rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 1.2rem;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* Glassmorphism card style */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
-            padding: 2rem;
-            transition: all 0.3s ease;
-            margin-bottom: 2rem;
-        }
-
-        .glass-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding-bottom: 0.75rem;
-        }
-
-        .form-label {
-            font-weight: 500;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-control, .form-select {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: white;
-            padding: 0.7rem 1rem;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus, .form-select:focus {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .form-text {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .btn-primary {
-            background: rgba(255, 255, 255, 0.25);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50px;
-            font-weight: 600;
-            padding: 0.75rem 2rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background: rgba(255, 255, 255, 0.35);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .output-area {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 1.5rem;
-            font-family: 'Courier New', Courier, monospace;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            color: #e0e0e0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .tooltip-inner {
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 8px;
-            padding: 8px 12px;
-            max-width: 300px;
-        }
-
-        /* Custom tooltip */
-        .custom-tooltip {
-            position: relative;
-            display: inline-block;
-        }
-
-        .custom-tooltip .tooltip-text {
-            visibility: hidden;
-            width: 250px;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            text-align: left;
-            border-radius: 6px;
-            padding: 8px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.85rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            line-height: 1.4;
-        }
-
-        .custom-tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .custom-tooltip .tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
-        }
-
-        .footer {
-            background: rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem 0;
-            margin-top: 4rem;
-        }
-
-        .footer a {
-            color: white;
-            opacity: 0.8;
-            text-decoration: none;
-            transition: opacity 0.3s;
-        }
-
-        .footer a:hover {
-            opacity: 1;
-        }
-
-        /* Action buttons */
-        .action-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            border-radius: 50px;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .home-link {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            border-radius: 50px;
-            padding: 0.5rem 1rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        .home-link:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .potential-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .potential-card h4 {
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 0.5rem;
-        }
-
-        .add-potential-btn, .add-overlap-btn, .add-cfp-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px dashed rgba(255, 255, 255, 0.4);
-            color: white;
-            border-radius: 10px;
-            padding: 1rem;
-            text-align: center;
-            margin-top: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .add-potential-btn:hover, .add-overlap-btn:hover, .add-cfp-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-        }
-
-        .remove-potential, .remove-overlap, .remove-cfp {
-            color: rgba(255, 255, 255, 0.7);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .remove-potential:hover, .remove-overlap:hover, .remove-cfp:hover {
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .header p {
-                font-size: 1rem;
-            }
-            
-            .glass-card {
-                padding: 1.5rem;
-            }
-
-            .custom-tooltip .tooltip-text {
-                width: 200px;
-            }
-        }
-    </style>
+    <meta name="description" content="Generate input files for FRESCO transfer calculations. Configure parameters for nuclear reaction simulations.">
+    <meta name="keywords" content="FRESCO, transfer, nuclear physics, reaction calculations">
+    <meta name="author" content="Jin Lei">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="assets/css/fresco-styles.css">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J60NE88WR1"></script>
 </head>
 <body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+        <i class="fas fa-moon" id="theme-icon"></i>
+    </button>
+    
     <a href="index.html" class="home-link">
         <i class="fas fa-home me-2"></i>Home
     </a>
@@ -307,6 +35,29 @@
 
     <!-- Main Content -->
     <div class="container my-4">
+        <!-- Upload Section -->
+        <div class="glass-card mb-4">
+            <h3><i class="fas fa-upload me-2"></i>Upload Existing Input File</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="file-upload-transfer" class="form-label">
+                        Select FRESCO Input File
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Upload an existing FRESCO input file (.in, .inp, .txt) to populate the form fields automatically.</span>
+                        </span>
+                    </label>
+                    <input type="file" class="form-control" id="file-upload-transfer" accept=".in,.inp,.txt" onchange="handleFileUpload(event, 'transfer')">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="button" class="glass-btn" onclick="document.getElementById('file-upload-transfer').click()">
+                        <i class="fas fa-folder-open me-2"></i>Browse Files
+                    </button>
+                </div>
+            </div>
+            <small class="form-text">Supported formats: .in, .inp, .txt</small>
+        </div>
+
         <form id="transfer-form">
             <!-- General Parameters -->
             <div class="glass-card">
@@ -920,6 +671,16 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Nuclear Potentials -->
+                <div id="potential-container">
+                    <!-- This will be filled with potential cards -->
+                </div>
+                
+                <!-- Add Potential Button -->
+                <div class="add-potential-btn" id="add-potential-btn">
+                    <i class="fas fa-plus me-2"></i>Add Nuclear Potential
+                </div>
             </div>
 
             <!-- Overlap Parameters -->
@@ -1215,8 +976,129 @@
         </div>
     </template>
 
+    <!-- Potential Template -->
+    <template id="potential-template">
+        <div class="potential-card" data-potential-id="">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Nuclear Potential <span class="potential-number"></span></h4>
+                <a href="#" class="remove-potential"><i class="fas fa-times"></i></a>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="potential-type" class="form-label">
+                        Potential Type
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Type of nuclear potential.</span>
+                        </span>
+                    </label>
+                    <select class="form-select potential-type">
+                        <option value="1">1 - Volume (Central)</option>
+                        <option value="2">2 - Surface (Derivative)</option>
+                        <option value="3">3 - Spin-orbit (Projectile)</option>
+                        <option value="4">4 - Spin-orbit (Target)</option>
+                        <option value="5">5 - Tr tensor force (Projectile)</option>
+                        <option value="6">6 - Tr tensor force (Target)</option>
+                        <option value="7">7 - Tensor force (L and combined spins)</option>
+                        <option value="8">8 - Spin.spin force</option>
+                        <option value="9">9 - Effective mass</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="potential-shape" class="form-label">
+                        Shape
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Radial shape of the potential.</span>
+                        </span>
+                    </label>
+                    <select class="form-select potential-shape">
+                        <option value="0">0 - Woods-Saxon</option>
+                        <option value="1">1 - Woods-Saxon Squared</option>
+                        <option value="2">2 - Gaussian</option>
+                        <option value="3">3 - Yukawa</option>
+                        <option value="4">4 - Exponential</option>
+                        <option value="5">5 - Reid soft core (T=0)</option>
+                        <option value="6">6 - Reid soft core (T=1)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row real-params">
+                <div class="col-md-12 mb-2">
+                    <h5>Real Part</h5>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Depth (p1)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Depth of the real part of the potential in MeV.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control p1" value="40.0" step="0.1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Radius (p2)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Radius parameter for the potential in fm.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control p2" value="1.2" step="0.1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Diffuseness (p3)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Diffuseness parameter for the potential in fm.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control p3" value="0.65" step="0.01">
+                </div>
+            </div>
+            <div class="row imag-params">
+                <div class="col-md-12 mb-2">
+                    <h5>Imaginary Part</h5>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Depth (p4)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Depth of the imaginary part of the potential in MeV.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control p4" value="10.0" step="0.1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Radius (p5)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Radius parameter for the imaginary potential in fm.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control p5" value="1.2" step="0.1">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">
+                        Diffuseness (p6)
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle ms-1"></i>
+                            <span class="tooltip-text">Diffuseness parameter for the imaginary potential in fm.</span>
+                        </span>
+                    </label>
+                    <input type="number" class="form-control p6" value="0.5" step="0.01">
+                </div>
+            </div>
+        </div>
+    </template>
+
     <!-- JavaScript Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="assets/js/fresco-common.js"></script>
     
     <!-- Custom JavaScript -->
     <script>
@@ -1232,6 +1114,12 @@
             const addCfpBtn = document.getElementById('add-cfp-btn');
             const cfpTemplate = document.getElementById('cfp-template');
             let cfpCount = 0;
+            
+            // Potential management
+            const potentialContainer = document.getElementById('potential-container');
+            const addPotentialBtn = document.getElementById('add-potential-btn');
+            const potentialTemplate = document.getElementById('potential-template');
+            let potentialCount = 0;
             
             // Coupling type selection
             const couplingKind = document.getElementById('coupling-kind');
@@ -1337,6 +1225,56 @@
                 cfpCount = cfps.length;
             }
             
+            // Add a nuclear potential
+            function addPotential() {
+                potentialCount++;
+                
+                // Clone the template
+                const potentialNode = document.importNode(potentialTemplate.content, true);
+                
+                // Set unique IDs and update labels
+                const potentialCard = potentialNode.querySelector('.potential-card');
+                potentialCard.dataset.potentialId = potentialCount;
+                potentialCard.querySelector('.potential-number').textContent = potentialCount;
+                
+                // Set remove button action
+                potentialCard.querySelector('.remove-potential').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    potentialCard.remove();
+                    updatePotentialNumbers();
+                });
+                
+                // Add potential shape change handler
+                const potentialTypeSelect = potentialCard.querySelector('.potential-type');
+                potentialTypeSelect.addEventListener('change', function() {
+                    updatePotentialParameters(potentialCard, this.value);
+                });
+                
+                // Append to container
+                potentialContainer.appendChild(potentialNode);
+                
+                return potentialCard;
+            }
+            
+            // Update numbering when a potential is removed
+            function updatePotentialNumbers() {
+                const potentials = potentialContainer.querySelectorAll('.potential-card');
+                potentials.forEach((potential, index) => {
+                    potential.querySelector('.potential-number').textContent = index + 1;
+                    potential.dataset.potentialId = index + 1;
+                });
+                potentialCount = potentials.length;
+            }
+            
+            // Update potential parameters based on type
+            function updatePotentialParameters(card, type) {
+                // This can be expanded to show/hide parameters based on potential type
+                console.log('Potential type changed to:', type);
+            }
+            
+            // Make addPotential globally accessible for file upload
+            window.addPotential = addPotential;
+            
             // Add initial overlap and CFP
             addOverlap();
             addCfp();
@@ -1349,6 +1287,11 @@
             // Add CFP button listener
             addCfpBtn.addEventListener('click', function() {
                 addCfp();
+            });
+            
+            // Add potential button listener
+            addPotentialBtn.addEventListener('click', function() {
+                addPotential();
             });
             
             // Generate FRESCO input file
