@@ -419,6 +419,26 @@
             <div class="glass-card">
                 <h3><i class="fas fa-atom me-2"></i>Optical Potential Parameters</h3>
                 
+                <!-- Comprehensive Potential Documentation -->
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle me-2"></i>Nuclear Potential Form Factor Information</h5>
+                    <p><strong>Note:</strong> TYPE=0 (Coulomb potential) is handled separately in the Coulomb potential section above. The nuclear potential options are for TYPE=1 and higher.</p>
+                    <p><strong>Shape Definitions:</strong></p>
+                    <ul class="mb-2">
+                        <li><strong>Volume potentials (TYPE=1,8,15):</strong> R = P2*CC, RH = (r-R)/P3, E = exp(-(r-R)/P3)</li>
+                        <li><strong>Surface potentials (TYPE=2):</strong> First derivative forms, normalized to -1 when E=1</li>
+                        <li><strong>Spin-orbit potentials (TYPE=3,4):</strong> Multiplied by [j(j+1)-l(l+1)-s(s+1)]/2l·s, CONLS = 2.000</li>
+                        <li><strong>Tensor potentials (TYPE=5,6,7):</strong> Second derivative forms, normalized to unity when E=1</li>
+                    </ul>
+                    <p><strong>Special Features:</strong></p>
+                    <ul class="mb-0">
+                        <li>If TYPE < 0: Add potential numerically to previous potential using abs(TYPE)</li>
+                        <li>SHAPE ≥ 30: L/J-dependent potential with form factor</li>
+                        <li>SHAPE = 40-42: Parity/L/J-dependent potentials</li>
+                        <li>SHAPE 7-9: Read from external file (rewind with negative values)</li>
+                    </ul>
+                </div>
+                
                 <!-- Coulomb Potential -->
                 <div class="potential-card" id="coulomb-potential">
                     <div class="d-flex justify-content-between align-items-center mb-3">

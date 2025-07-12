@@ -371,6 +371,26 @@
             <div class="glass-card">
                 <h3><i class="fas fa-atom me-2"></i>Optical Potentials</h3>
                 
+                <!-- Comprehensive Potential Documentation -->
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle me-2"></i>Nuclear Potential Form Factor Information</h5>
+                    <p><strong>Note:</strong> TYPE=0 (Coulomb potential) is handled separately in the optical potential sections. The nuclear potential options below are for TYPE=1 and higher.</p>
+                    <p><strong>Shape Definitions:</strong></p>
+                    <ul class="mb-2">
+                        <li><strong>Volume potentials (TYPE=1,8,15):</strong> R = P2*CC, RH = (r-R)/P3, E = exp(-(r-R)/P3)</li>
+                        <li><strong>Surface potentials (TYPE=2):</strong> First derivative forms, normalized to -1 when E=1</li>
+                        <li><strong>Spin-orbit potentials (TYPE=3,4):</strong> Multiplied by [j(j+1)-l(l+1)-s(s+1)]/2l·s, CONLS = 2.000</li>
+                        <li><strong>Tensor potentials (TYPE=5,6,7):</strong> Second derivative forms, normalized to unity when E=1</li>
+                    </ul>
+                    <p><strong>Special Features:</strong></p>
+                    <ul class="mb-0">
+                        <li>If TYPE < 0: Add potential numerically to previous potential using abs(TYPE)</li>
+                        <li>SHAPE ≥ 30: L/J-dependent potential with form factor</li>
+                        <li>SHAPE = 40-42: Parity/L/J-dependent potentials</li>
+                        <li>SHAPE 7-9: Read from external file (rewind with negative values)</li>
+                    </ul>
+                </div>
+                
                 <!-- Initial Channel Optical Potential -->
                 <div class="potential-card" id="initial-potential">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -993,15 +1013,23 @@
                         </span>
                     </label>
                     <select class="form-select potential-type">
-                        <option value="1">1 - Volume (Central)</option>
-                        <option value="2">2 - Surface (Derivative)</option>
-                        <option value="3">3 - Spin-orbit (Projectile)</option>
-                        <option value="4">4 - Spin-orbit (Target)</option>
-                        <option value="5">5 - Tr tensor force (Projectile)</option>
-                        <option value="6">6 - Tr tensor force (Target)</option>
-                        <option value="7">7 - Tensor force (L and combined spins)</option>
-                        <option value="8">8 - Spin.spin force</option>
-                        <option value="9">9 - Effective mass</option>
+                        <option value="1" selected>1 - Central potential, Volume</option>
+                        <option value="2">2 - Central potential, Derivative (surface)</option>
+                        <option value="3">3 - Spin-orbit for projectile</option>
+                        <option value="4">4 - Spin-orbit for target</option>
+                        <option value="5">5 - Tr tensor force for projectile</option>
+                        <option value="6">6 - Tr tensor force for target</option>
+                        <option value="7">7 - Tensor force between L and combined spins</option>
+                        <option value="8">8 - Nucleon-nucleon SSC potential</option>
+                        <option value="9">9 - User-supplied nucleon-nucleon potential</option>
+                        <option value="10">10 - Deformed projectile (matrix elements from ROTOR)</option>
+                        <option value="11">11 - Deformed target (matrix elements from ROTOR)</option>
+                        <option value="12">12 - Projectile coupled by matrix elements read in</option>
+                        <option value="13">13 - Target coupled by matrix elements read in</option>
+                        <option value="14">14 - Projectile second-order coupled by matrix elements</option>
+                        <option value="15">15 - Central potential, Volume (for TYPE 15)</option>
+                        <option value="16">16 - Target & projectile simultaneous second-order coupled</option>
+                        <option value="17">17 - Target & projectile all-order coupled</option>
                     </select>
                 </div>
                 <div class="col-md-4 mb-3">
@@ -1013,13 +1041,30 @@
                         </span>
                     </label>
                     <select class="form-select potential-shape">
-                        <option value="0">0 - Woods-Saxon</option>
-                        <option value="1">1 - Woods-Saxon Squared</option>
-                        <option value="2">2 - Gaussian</option>
-                        <option value="3">3 - Yukawa</option>
-                        <option value="4">4 - Exponential</option>
-                        <option value="5">5 - Reid soft core (T=0)</option>
-                        <option value="6">6 - Reid soft core (T=1)</option>
+                        <option value="0" selected>0 - Woods-Saxon: -P1/(1+1/E)</option>
+                        <option value="1">1 - WS squared: -P1/(1+1/E)²</option>
+                        <option value="2">2 - Gaussian: -P1*exp(-RH²)</option>
+                        <option value="3">3 - Yukawa: -P1*E/r</option>
+                        <option value="4">4 - Exponential: -P1*E</option>
+                        <option value="5">5 - Reid soft core T=0, central part</option>
+                        <option value="6">6 - Reid soft core T=1, central part</option>
+                        <option value="7">7 - Read Real from file</option>
+                        <option value="8">8 - Read Imaginary from file</option>
+                        <option value="9">9 - Read Complex from file</option>
+                        <option value="-1">-1 - Fourier-Bessel: j₀(RH) = sin(RH)/RH</option>
+                        <option value="-7">-7 - Rewind and read Real from file</option>
+                        <option value="-8">-8 - Rewind and read Imaginary from file</option>
+                        <option value="-9">-9 - Rewind and read Complex from file</option>
+                        <option value="10">10 - Write potential to Output file 25</option>
+                        <option value="20">20 - J-dependent potential from file</option>
+                        <option value="21">21 - J-dependent potential from file</option>
+                        <option value="22">22 - J-dependent potential from file</option>
+                        <option value="23">23 - J-dependent potential from file</option>
+                        <option value="24">24 - J-dependent potential from file</option>
+                        <option value="30">30 - L/J-dependent form factor</option>
+                        <option value="40">40 - Parity-dependent: P1 for +, P2 for -</option>
+                        <option value="41">41 - L-dependent: P(L+1) for L=0-5</option>
+                        <option value="42">42 - J-dependent: P(Ji+1) for Ji=0-5</option>
                     </select>
                 </div>
             </div>

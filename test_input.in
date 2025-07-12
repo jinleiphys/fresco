@@ -1,0 +1,24 @@
+! Test FRESCO input file for elastic scattering
+! Alpha + 12C elastic scattering at 30 MeV
+
+&FRESCO
+hcm=0.05
+rmatch=30.0
+absend=0.01
+thmax=180.0
+jtmax=40
+thinc=5.0
+elab=30.0
+iter=1
+/
+
+&PARTITION
+namep='alpha'
+massp=4.0
+zp=2.0
+jp=0.0
+namet='12C'
+masst=12.0
+zt=6.0
+jt=0.0
+/

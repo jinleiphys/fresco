@@ -282,42 +282,64 @@ function parseAndPopulateForm(content, formType) {
 
 function parseParametersFromLine(line, namelistObj) {
     // Handle multiple parameters on same line, including array syntax like p(1:3)=
-    const assignments = line.split(/\s+(?=[\w\(\)]+\s*=)/).filter(s => s.includes('='));
+    // First, split by spaces but be careful about parameter boundaries
+    const tokens = line.trim().split(/\s+/);
+    let i = 0;
     
-    assignments.forEach(assignment => {
-        const equalIndex = assignment.indexOf('=');
-        if (equalIndex > 0) {
-            let key = assignment.substring(0, equalIndex).trim();
-            let value = assignment.substring(equalIndex + 1).trim();
+    while (i < tokens.length) {
+        const token = tokens[i];
+        
+        // Look for parameter assignments (param=value)
+        if (token.includes('=')) {
+            const equalIndex = token.indexOf('=');
+            let key = token.substring(0, equalIndex).trim();
+            let value = token.substring(equalIndex + 1).trim();
+            
+            // If value is empty, it might be the next token
+            if (!value && i + 1 < tokens.length) {
+                value = tokens[i + 1];
+                i++; // Skip the next token since we used it as value
+            }
+            
+            // Clean up the value (remove quotes, trailing commas, slashes, etc.)
+            value = value.replace(/^['"]|['"]$/g, '').replace(/[,\/]+$/, '').trim();
             
             if (key && value) {
-                // Clean up the value (remove quotes, trailing commas, slashes, etc.)
-                value = value.replace(/^['"]|['"]$/g, '').replace(/[,\/]+$/, '').trim();
-                
                 // Handle array parameters like p(1:3)= or elab(1)=
                 if (key.includes('(') && key.includes(')')) {
                     // Extract base parameter name (e.g., 'p' from 'p(1:3)')
                     const baseKey = key.substring(0, key.indexOf('(')).toLowerCase();
                     
-                    // For array parameters, store the values as space-separated string
-                    if (value.includes(' ')) {
-                        // Multiple values: store as array
-                        const values = value.split(/\s+/).filter(v => v && !v.includes('/'));
+                    // For array parameters, collect the values that follow
+                    const values = [value];
+                    
+                    // Look ahead for more numeric values that belong to this array
+                    let j = i + 1;
+                    while (j < tokens.length && !tokens[j].includes('=') && /^[\d\.\-\+eE]+$/.test(tokens[j])) {
+                        values.push(tokens[j]);
+                        j++;
+                    }
+                    
+                    // Store as array if multiple values, otherwise as single value
+                    if (values.length > 1) {
                         namelistObj[baseKey] = values;
                         console.log(`  ${key} -> ${baseKey} = [${values.join(', ')}]`);
                     } else {
-                        // Single value
                         namelistObj[baseKey] = value;
                         console.log(`  ${key} -> ${baseKey} = ${value}`);
                     }
+                    
+                    // Skip the consumed tokens
+                    i = j - 1;
                 } else {
-                    // Regular parameter
+                    // Regular parameter - only take the immediate value
                     namelistObj[key.toLowerCase()] = value;
                     console.log(`  ${key} = ${value}`);
                 }
             }
         }
-    });
+        i++;
+    }
 }
 
 function populateFormFields(namelists, formType, content) {
@@ -514,17 +536,48 @@ function populateFormFields(namelists, formType, content) {
         // Populate the potential fields
         Object.keys(namelist).forEach(param => {
             let value = namelist[param];
-            if (Array.isArray(value)) {
-                value = value[0];
-            }
             
             // Map potential parameters to form fields within the card
             const paramMapping = {
                 'type': '.potential-type',
                 'shape': '.potential-shape',
                 'kp': '.kp-field',  // This field might not exist, keep for compatibility
-                'p': '.p1'  // Map p array to p1 for now
+                'p': '.p1',  // Map p array to p1 for now
+                'p1': '.p1',
+                'p2': '.p2',
+                'p3': '.p3',
+                'p4': '.p4',
+                'p5': '.p5',
+                'p6': '.p6',
+                'p7': '.p7'
             };
+            
+            // Special handling for 'p' array parameter
+            if (param.toLowerCase() === 'p' && Array.isArray(value)) {
+                console.log(`    Handling p array with ${value.length} values:`, value);
+                
+                // Populate p1, p2, p3, etc. with the array values
+                value.forEach((val, index) => {
+                    const pFieldSelector = `.p${index + 1}`;
+                    const pElement = card.querySelector(pFieldSelector);
+                    if (pElement) {
+                        try {
+                            pElement.value = val;
+                            pElement.dispatchEvent(new Event('change'));
+                            console.log(`    ✅ Set p${index + 1} = ${val} in potential card`);
+                            fieldsPopulated++;
+                        } catch (error) {
+                            console.log(`    ❌ Error setting p${index + 1}:`, error);
+                        }
+                    }
+                });
+                return; // Skip the normal processing for this parameter
+            }
+            
+            // For other parameters, use single value
+            if (Array.isArray(value)) {
+                value = value[0];
+            }
             
             const selector = paramMapping[param.toLowerCase()];
             if (selector) {
@@ -541,6 +594,16 @@ function populateFormFields(namelists, formType, content) {
                                 fieldsPopulated++;
                             } else {
                                 console.log(`    ⚠️ No matching option found for ${param} = ${value}`);
+                                // Try to find a partial match in option text
+                                const partialMatch = options.find(option => 
+                                    option.text.toLowerCase().includes(value.toString().toLowerCase()) ||
+                                    option.value.toString().includes(value.toString())
+                                );
+                                if (partialMatch) {
+                                    element.value = partialMatch.value;
+                                    console.log(`    ✅ Set ${param} = ${partialMatch.value} (partial match) in potential card`);
+                                    fieldsPopulated++;
+                                }
                             }
                         } else {
                             element.value = value;
