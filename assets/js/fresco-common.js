@@ -227,12 +227,20 @@ function parseAndPopulateForm(content, formType) {
     let currentNamelist = null;
     let potentialCount = 0;
     
+    // Store parsed parameters globally for use in generation
+    window.parsedFrescoParameters = {};
+    
     // Parse the input file
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        // Skip comments and empty lines
-        if (line.startsWith('!') || line.startsWith('#') || line === '') continue;
+        // Skip comments and empty lines - be careful not to skip "&FRESCO" 
+        if (line === '' || 
+            line.startsWith('!') || 
+            line.startsWith('#') || 
+            line.startsWith('*') || 
+            (line.startsWith('C') && !line.startsWith('&')) ||
+            (line.startsWith('c') && !line.startsWith('&'))) continue;
         
         // Detect namelist start
         if (line.startsWith('&')) {
@@ -445,7 +453,30 @@ function populateFormFields(namelists, formType, content) {
         
         // Handle potentials specially - create dynamic potential cards
         if (namelistName.startsWith('pot') && namelistName !== 'pot') {
-            handlePotentialData(namelistName, namelist);
+            // Check if this is a nuclear potential (has type parameter)
+            // Coulomb potentials typically only have kp, ap, at, rc
+            const hasType = namelist.hasOwnProperty('type');
+            const hasNuclearParams = namelist.hasOwnProperty('p1') || namelist.hasOwnProperty('p');
+            
+            if (hasType || hasNuclearParams) {
+                console.log(`Nuclear potential detected: ${namelistName}`);
+                handlePotentialData(namelistName, namelist);
+            } else {
+                console.log(`Coulomb potential detected: ${namelistName} - populating basic fields`);
+                // Handle Coulomb potential parameters in basic form fields
+                if (namelist.rc) {
+                    const rcElement = document.getElementById('rc');
+                    if (rcElement) rcElement.value = namelist.rc;
+                }
+                if (namelist.ap) {
+                    const apElement = document.getElementById('ap');
+                    if (apElement) apElement.value = namelist.ap;
+                }
+                if (namelist.at) {
+                    const atElement = document.getElementById('at');
+                    if (atElement) atElement.value = namelist.at;
+                }
+            }
             return;
         }
         
@@ -453,10 +484,17 @@ function populateFormFields(namelists, formType, content) {
             let paramLower = param.toLowerCase();
             let value = namelist[param];
             
-            // Handle array values - convert arrays to first value for form fields
+            // Handle array values - special handling for elab parameter
             if (Array.isArray(value)) {
-                value = value[0] || value;
-                console.log(`Array parameter ${param}: using first value = ${value}`);
+                if (paramLower === 'elab') {
+                    // For elab, join multiple values with commas
+                    value = value.join(', ');
+                    console.log(`Array parameter ${param}: joined values = ${value}`);
+                } else {
+                    // For other parameters, use first value
+                    value = value[0] || value;
+                    console.log(`Array parameter ${param}: using first value = ${value}`);
+                }
             }
             
             const fieldId = parameterMappings[paramLower] || paramLower;
@@ -716,7 +754,7 @@ function populateFrescoNamelistParameters(frescoNamelist) {
         const paramLower = paramName.toLowerCase();
         let value = frescoNamelist[paramName];
         
-        // Handle array values - convert arrays to comma-separated string
+        // Handle array values - convert arrays to comma-separated string  
         if (Array.isArray(value)) {
             value = value.join(', ');
             console.log(`Array parameter ${paramName}: converted to = ${value}`);
@@ -759,7 +797,21 @@ function populateFrescoNamelistParameters(frescoNamelist) {
                     console.log(`❌ Error setting basic field ${paramLower}:`, error);
                 }
             } else {
-                console.log(`⚠️ Basic field ${paramLower} not found`);
+                // Store parameter for later use in generation even if no form field exists
+                // For elab, make sure we store the full comma-separated string
+                let storeValue = value;
+                if (paramLower === 'elab' && Array.isArray(frescoNamelist[paramName])) {
+                    storeValue = frescoNamelist[paramName].join(', ');
+                }
+                window.parsedFrescoParameters[paramLower] = storeValue;
+                
+                // Only log warning for parameters that should exist in basic forms
+                const basicParams = ['hcm', 'rmatch', 'jtmax', 'absend', 'thmin', 'thmax', 'thinc', 'elab', 'iter', 'pel', 'exl', 'lin', 'lex'];
+                if (basicParams.includes(paramLower)) {
+                    console.log(`⚠️ Basic field ${paramLower} not found`);
+                } else {
+                    console.log(`ℹ️ Advanced parameter ${paramLower} = ${storeValue} (stored for generation)`);
+                }
             }
         } else {
             console.log(`⚠️ Parameter ${paramLower} not found in FrescoNamelist configuration`);
@@ -775,6 +827,10 @@ function populateFrescoNamelistParameters(frescoNamelist) {
                 } catch (error) {
                     console.log(`❌ Error setting fallback field ${paramLower}:`, error);
                 }
+            } else {
+                // Store parameter for later use in generation
+                window.parsedFrescoParameters[paramLower] = value;
+                console.log(`ℹ️ Unknown parameter ${paramLower} = ${value} (stored for generation)`);
             }
         }
     });
