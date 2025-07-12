@@ -564,6 +564,55 @@ body {
     }
 }
 
+/* Advanced FRESCO Parameters styling */
+.advanced-fresco-card {
+    background: rgba(139, 69, 19, 0.25) !important; /* Saddle brown tint */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(210, 180, 140, 0.4) !important; /* Tan border */
+    box-shadow: 0 8px 32px 0 rgba(139, 69, 19, 0.2) !important;
+}
+
+.advanced-fresco-card:hover {
+    background: rgba(139, 69, 19, 0.3) !important;
+    border: 1px solid rgba(210, 180, 140, 0.6) !important;
+    box-shadow: 0 15px 30px 0 rgba(139, 69, 19, 0.3) !important;
+}
+
+.advanced-fresco-card h3 {
+    color: #f4f1de !important; /* Warm white */
+    border-bottom: 1px solid rgba(210, 180, 140, 0.3) !important;
+}
+
+.advanced-fresco-card .glass-btn {
+    background: rgba(160, 82, 45, 0.3) !important; /* Saddle brown variant */
+    border: 1px solid rgba(210, 180, 140, 0.4) !important;
+    color: #f4f1de !important;
+}
+
+.advanced-fresco-card .glass-btn:hover {
+    background: rgba(160, 82, 45, 0.5) !important;
+    border: 1px solid rgba(210, 180, 140, 0.6) !important;
+    transform: translateY(-2px);
+}
+
+.advanced-fresco-card .glass-btn.active {
+    background: rgba(139, 69, 19, 0.6) !important;
+    border: 1px solid rgba(210, 180, 140, 0.8) !important;
+    box-shadow: 0 4px 15px rgba(139, 69, 19, 0.4) !important;
+}
+
+/* Namelist section styling */
+.namelist-section .glass-card {
+    background: rgba(101, 67, 33, 0.2) !important; /* Darker brown for subsections */
+    border: 1px solid rgba(210, 180, 140, 0.3) !important;
+}
+
+.namelist-section .glass-card h4 {
+    color: #e9c46a !important; /* Warm yellow */
+    border-bottom: 1px solid rgba(210, 180, 140, 0.2) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;

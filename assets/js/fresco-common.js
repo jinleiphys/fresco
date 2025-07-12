@@ -346,6 +346,13 @@ function populateFormFields(namelists, formType, content) {
     console.log('Populating form fields for type:', formType);
     console.log('Parsed namelists:', namelists);
     
+    // Use FrescoNamelist configuration if available
+    let useAdvancedConfig = false;
+    if (typeof window.FrescoNamelist !== 'undefined') {
+        useAdvancedConfig = true;
+        console.log('Using FrescoNamelist configuration for parameter mapping');
+    }
+    
     // Enhanced parameter mapping - maps FRESCO parameter names to form field IDs
     const parameterMappings = {
         // Common FRESCO parameters
@@ -419,10 +426,22 @@ function populateFormFields(namelists, formType, content) {
     
     let fieldsPopulated = 0;
     
+    // Handle FRESCO namelist parameters first if using advanced config
+    if (useAdvancedConfig && namelists.fresco) {
+        console.log('Processing FRESCO namelist with advanced configuration');
+        fieldsPopulated += populateFrescoNamelistParameters(namelists.fresco);
+    }
+    
     // Go through all namelists and try to populate fields
     Object.keys(namelists).forEach(namelistName => {
         const namelist = namelists[namelistName];
         console.log(`Processing namelist: ${namelistName}`, namelist);
+        
+        // Skip FRESCO namelist if already processed
+        if (namelistName === 'fresco' && useAdvancedConfig) {
+            console.log('Skipping FRESCO namelist (already processed)');
+            return;
+        }
         
         // Handle potentials specially - create dynamic potential cards
         if (namelistName.startsWith('pot') && namelistName !== 'pot') {
@@ -677,6 +696,90 @@ function populateFormFields(namelists, formType, content) {
     } else {
         showNotification(`Successfully populated ${fieldsPopulated} form fields!`, 'success');
     }
+}
+
+// Function to populate FRESCO namelist parameters using the new configuration
+function populateFrescoNamelistParameters(frescoNamelist) {
+    if (typeof window.FrescoNamelist === 'undefined') {
+        console.log('FrescoNamelist configuration not available');
+        return 0;
+    }
+    
+    let fieldsPopulated = 0;
+    console.log('Populating FRESCO namelist parameters:', frescoNamelist);
+    
+    // Get all configured parameters
+    const allParams = window.FrescoNamelist.getAllParameters();
+    
+    // Process each parameter from the uploaded file
+    Object.keys(frescoNamelist).forEach(paramName => {
+        const paramLower = paramName.toLowerCase();
+        let value = frescoNamelist[paramName];
+        
+        // Handle array values - convert arrays to comma-separated string
+        if (Array.isArray(value)) {
+            value = value.join(', ');
+            console.log(`Array parameter ${paramName}: converted to = ${value}`);
+        }
+        
+        // Check if this parameter is configured in FrescoNamelist
+        const paramConfig = allParams[paramLower];
+        if (paramConfig) {
+            console.log(`Found configuration for parameter: ${paramLower}`);
+            
+            // Try to populate the basic form field first
+            const basicElement = document.getElementById(paramLower);
+            if (basicElement) {
+                try {
+                    if (basicElement.type === 'checkbox') {
+                        basicElement.checked = value.toString().toLowerCase() === 'true' || 
+                                            value === '1' || 
+                                            value.toString().toLowerCase() === 't';
+                    } else if (basicElement.type === 'select-one') {
+                        // For select elements, try to find matching option
+                        const options = Array.from(basicElement.options);
+                        const matchingOption = options.find(option => 
+                            option.value == value || 
+                            option.text.toLowerCase().includes(value.toString().toLowerCase())
+                        );
+                        if (matchingOption) {
+                            basicElement.value = matchingOption.value;
+                        } else {
+                            basicElement.value = value;
+                        }
+                    } else {
+                        basicElement.value = value;
+                    }
+                    
+                    // Trigger change event
+                    basicElement.dispatchEvent(new Event('change'));
+                    fieldsPopulated++;
+                    console.log(`✅ Set basic field ${paramLower} = ${value}`);
+                } catch (error) {
+                    console.log(`❌ Error setting basic field ${paramLower}:`, error);
+                }
+            } else {
+                console.log(`⚠️ Basic field ${paramLower} not found`);
+            }
+        } else {
+            console.log(`⚠️ Parameter ${paramLower} not found in FrescoNamelist configuration`);
+            
+            // Fallback to basic mapping for unknown parameters
+            const basicElement = document.getElementById(paramLower);
+            if (basicElement) {
+                try {
+                    basicElement.value = value;
+                    basicElement.dispatchEvent(new Event('change'));
+                    fieldsPopulated++;
+                    console.log(`✅ Set fallback field ${paramLower} = ${value}`);
+                } catch (error) {
+                    console.log(`❌ Error setting fallback field ${paramLower}:`, error);
+                }
+            }
+        }
+    });
+    
+    return fieldsPopulated;
 }
 
 // Create upload button HTML

@@ -295,7 +295,7 @@
             </div>
 
             <!-- Advanced FRESCO Namelist Parameters -->
-            <div class="glass-card">
+            <div class="glass-card advanced-fresco-card">
                 <h3><i class="fas fa-sliders-h me-2"></i>Advanced FRESCO Parameters</h3>
                 <p class="text-white-50 mb-3">Configure additional namelist parameters. Only non-default values will be included in the generated input file.</p>
                 <div class="row">
@@ -1174,10 +1174,8 @@
                     const sectionName = button.getAttribute('onclick').match(/toggleNamelistSection\('([^']+)'\)/)[1];
                     if (activeNamelistSections.has(sectionName)) {
                         button.classList.add('active');
-                        button.style.backgroundColor = 'rgba(139, 69, 19, 0.6)';
                     } else {
                         button.classList.remove('active');
-                        button.style.backgroundColor = '';
                     }
                 });
             }
