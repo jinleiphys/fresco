@@ -627,27 +627,8 @@
         // Initialize parameter manager
         let parameterManager;
         
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize the parameter manager
-            if (typeof FrescoParameterManager !== 'undefined') {
-                parameterManager = new FrescoParameterManager();
-                updateParameterDisplay();
-                console.log('Parameter manager initialized for elastic scattering');
-            } else {
-                console.error('FrescoParameterManager not available');
-            }
-            
-            // Check if FrescoNamelist is available for backward compatibility
-            console.log('DOM loaded, checking FrescoNamelist:', typeof window.FrescoNamelist);
-            
-            // Initialize basic form fields with configuration values
-            if (window.FrescoNamelist && window.FrescoNamelist.initializeBasicFields) {
-                window.FrescoNamelist.initializeBasicFields();
-            }
-        });
-        
-        // Parameter management functions
-        function updateParameterDisplay() {
+        // Parameter management functions (global scope)
+        window.updateParameterDisplay = function() {
             if (!parameterManager) return;
             
             const allocation = parameterManager.getParameterAllocation();
@@ -659,9 +640,9 @@
             // Update parameter lists
             updateParameterList('generalParameters', allocation.general.parameters, 'advanced');
             updateParameterList('advancedParameters', allocation.advanced.parameters, 'general');
-        }
+        };
 
-        function updateParameterList(containerId, parameters, moveToSection) {
+        window.updateParameterList = function(containerId, parameters, moveToSection) {
             const container = document.getElementById(containerId);
             if (!container) return;
             
@@ -699,9 +680,9 @@
                 item.appendChild(moveBtn);
                 container.appendChild(item);
             });
-        }
+        };
 
-        function moveParameter(paramName, toGeneral) {
+        window.moveParameter = function(paramName, toGeneral) {
             if (!parameterManager) return;
             
             try {
@@ -714,9 +695,9 @@
             } catch (error) {
                 console.error('Parameter move error:', error);
             }
-        }
+        };
 
-        function resetParametersToDefaults() {
+        window.resetParametersToDefaults = function() {
             if (!parameterManager) return;
             
             if (confirm('Reset all parameters to default allocation?')) {
@@ -724,15 +705,33 @@
                 updateParameterDisplay();
                 console.log('Parameters reset to default allocation');
             }
-        }
+        };
 
-        function showParameterState() {
+        window.showParameterState = function() {
             if (!parameterManager) return;
             
             const allocation = parameterManager.getParameterAllocation();
             console.log('Current Parameter State:', allocation);
             alert(`Current State:\n\nGeneral: ${allocation.general.count} parameters\nAdvanced: ${allocation.advanced.count} parameters\n\nSee console for detailed information.`);
-        }
+        };
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the parameter manager
+            if (typeof FrescoParameterManager !== 'undefined') {
+                parameterManager = new FrescoParameterManager();
+                updateParameterDisplay();
+                console.log('Parameter manager initialized for elastic scattering');
+            } else {
+                console.error('FrescoParameterManager not available');
+            }
+            
+            // Check if FrescoNamelist is available for backward compatibility
+            console.log('DOM loaded, checking FrescoNamelist:', typeof window.FrescoNamelist);
+            
+            // Initialize basic form fields with configuration values
+            if (window.FrescoNamelist && window.FrescoNamelist.initializeBasicFields) {
+                window.FrescoNamelist.initializeBasicFields();
+            }
             
             // Potential management
             const potentialContainer = document.getElementById('potential-container');
