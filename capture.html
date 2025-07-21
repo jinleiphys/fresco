@@ -15,6 +15,8 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J60NE88WR1"></script>
     <script src="assets/js/fresco-namelist.js"></script>
+    <script src="assets/js/fresco-parameter-manager.js"></script>
+    <script src="assets/js/fresco-integration.js"></script>
 </head>
 <body>
     <!-- Theme Toggle -->
@@ -72,7 +74,7 @@
                                 <span class="tooltip-text">Description of the calculation that will appear at the top of the input file.</span>
                             </span>
                         </label>
-                        <input type="text" class="form-control" id="header" placeholder="14C(n,g)15C E1 only">
+                        <input type="text" class="form-control" id="header" placeholder="14C(n,g)15C E1 only;">
                     </div>
                 </div>
                 <div class="row">
@@ -159,6 +161,16 @@
                             </span>
                         </label>
                         <input type="number" class="form-control" id="iter" value="1" min="1">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="rintp" class="form-label">
+                            Integration mesh size (rintp)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Radial integration mesh size in fm. Typical values are 0.1-0.5 fm.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="rintp" step="0.1">
                     </div>
                 </div>
             </div>
@@ -788,6 +800,9 @@
     <!-- Custom JavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if FrescoNamelist is available
+            console.log('DOM loaded, checking FrescoNamelist:', typeof window.FrescoNamelist);
+            
             // Initialize basic form fields with configuration values
             if (window.FrescoNamelist && window.FrescoNamelist.initializeBasicFields) {
                 window.FrescoNamelist.initializeBasicFields();
@@ -798,25 +813,43 @@
             
             // Toggle namelist section function
             window.toggleNamelistSection = function(sectionName) {
-                console.log('Toggle section:', sectionName); // Debug log
+                console.log('Toggle section called:', sectionName);
+                console.log('FrescoNamelist available:', typeof window.FrescoNamelist);
+                
                 const container = document.getElementById('namelist-forms');
+                if (!container) {
+                    console.error('Container namelist-forms not found');
+                    return;
+                }
+                
                 const existingSection = document.getElementById(`namelist-${sectionName}`);
                 
                 if (existingSection) {
                     // Section exists, remove it
                     existingSection.remove();
                     activeNamelistSections.delete(sectionName);
+                    console.log('Section removed:', sectionName);
                 } else {
                     // Section doesn't exist, create it
                     const sectionDiv = document.createElement('div');
                     sectionDiv.id = `namelist-${sectionName}`;
                     sectionDiv.className = 'namelist-section mt-3';
                     
+                    // Add a simple test content first
+                    sectionDiv.innerHTML = `<div class="glass-card"><h4>Loading ${sectionName}...</h4></div>`;
+                    
                     // First add the section to the DOM
                     container.appendChild(sectionDiv);
+                    console.log('Section div added to DOM');
                     
                     // Then create the form in it
-                    window.FrescoNamelist.createCategoryForm(sectionName, sectionDiv.id, {});
+                    if (window.FrescoNamelist && window.FrescoNamelist.createCategoryForm) {
+                        console.log('Creating category form...');
+                        window.FrescoNamelist.createCategoryForm(sectionName, sectionDiv.id, {});
+                    } else {
+                        console.error('FrescoNamelist not available or createCategoryForm not found');
+                        sectionDiv.innerHTML = '<div class="glass-card"><p class="text-danger">Error: FrescoNamelist configuration not loaded</p></div>';
+                    }
                     
                     activeNamelistSections.add(sectionName);
                 }
@@ -872,6 +905,7 @@
                 const thinc = document.getElementById('thinc').value;
                 const elab = document.getElementById('elab').value;
                 const iter = document.getElementById('iter').value;
+                const rintp = document.getElementById('rintp').value;
                 
                 const projectile = document.getElementById('projectile').value;
                 const projMass = document.getElementById('proj-mass').value;
@@ -958,15 +992,23 @@
                 const formData = {
                     hcm: parseFloat(hcm),
                     rmatch: parseFloat(rmatch),
-                    jtmin: 0,
+                    jtmin: 0.0,
                     jtmax: parseFloat(jtmax),
                     absend: parseFloat(absend),
-                    thmin: 0,
+                    thmin: 0.0,
                     thmax: parseFloat(thmax),
                     thinc: parseFloat(thinc),
-                    iter: parseInt(iter),
-                    elab: elab
+                    chans: 1,
+                    smats: 2,
+                    xstabl: 1,
+                    elab: elab,
+                    iter: parseInt(iter)
                 };
+                
+                // Add rintp only if it has a value
+                if (rintp && rintp.trim() !== '') {
+                    formData.rintp = parseFloat(rintp);
+                }
                 
                 // Collect additional namelist parameters from advanced sections
                 const namelistForms = document.getElementById('namelist-forms');
@@ -990,6 +1032,27 @@
                     });
                 }
                 
+                // Include parsed parameters from uploaded files
+                if (window.parsedFrescoParameters) {
+                    Object.keys(window.parsedFrescoParameters).forEach(param => {
+                        let value = window.parsedFrescoParameters[param];
+                        
+                        // Special handling for elab - always use parsed value if it contains multiple energies
+                        if (param === 'elab' && typeof value === 'string' && value.includes(',')) {
+                            formData[param] = value;
+                            console.log(`Overriding elab with parsed values: ${value}`);
+                        } else if (!formData.hasOwnProperty(param)) {
+                            // Only add if not already in formData (form fields take precedence)
+                            // Try to parse as number if it looks like a number
+                            if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
+                                value = parseFloat(value);
+                            }
+                            formData[param] = value;
+                            console.log(`Including parsed parameter: ${param} = ${value}`);
+                        }
+                    });
+                }
+                
                 // Generate namelist using the configuration
                 const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
                 
@@ -998,11 +1061,11 @@
 NAMELIST
 ${namelistSection}
 
- &PARTITION namep='${projectile}' massp=${projMass} zp=${projZ} nex=1 namet='${target}' masst=${targMass} zt=${targZ} /
- &STATES jp=${projSpin} ptyp=1 ep=0 cpot=1 jt=${targSpin} ptyt=1 et=0/
+ &PARTITION namep='${projectile}' massp=${projMass} zp=${projZ} nex=1 namet='${target}' masst=${targMass} zt=${targZ} qval=0.0 pwf=T /
+ &STATES jp=${projSpin} copyp=0 bandp=1 ep=0.0000 kkp=0 tp=0 cpot=1 jt=${targSpin} copyt=0 bandt=1 et=0.0000 kkt=0 tt=0 /
 
- &PARTITION namep='Gamma' massp=0 zp=0 nex=1 namet='${residual}' masst=${resMass} zt=${resZ} qval=${qval} /
- &STATES jp=${gammaSpin} ptyp=1 ep=0 cpot=3 jt=${resSpin} ptyt=1 et=0/
+ &PARTITION namep='Gamma' massp=0 zp=0 nex=1 namet='${residual}' masst=${resMass} zt=${resZ} qval=${qval} pwf=T /
+ &STATES jp=${gammaSpin} copyp=0 bandp=1 ep=0.0000 kkp=0 tp=0 cpot=3 jt=${resSpin} copyt=0 bandt=1 et=0.0000 kkt=0 tt=0 /
  &partition / 
 
  &Pot kp=1 type= 0 shape= 0 p(1:3)=   ${targMass}.0000   0.0000   ${rc} /                                     

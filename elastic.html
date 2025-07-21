@@ -16,6 +16,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J60NE88WR1"></script>
     <script src="assets/js/fresco-namelist.js"></script>
     <script src="assets/js/fresco-parameter-manager.js"></script>
+    <script src="assets/js/fresco-common.js"></script>
     <script src="assets/js/fresco-integration.js"></script>
 </head>
 <body>
@@ -161,6 +162,16 @@
                             </span>
                         </label>
                         <input type="number" class="form-control" id="iter" value="1" min="1">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="rintp" class="form-label">
+                            Integration mesh size (rintp)
+                            <span class="custom-tooltip">
+                                <i class="fas fa-info-circle ms-1"></i>
+                                <span class="tooltip-text">Radial integration mesh size in fm. Typical values are 0.1-0.5 fm.</span>
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" id="rintp" step="0.1">
                     </div>
                 </div>
             </div>
@@ -811,6 +822,7 @@
                 const thinc = document.getElementById('thinc').value;
                 const elab = document.getElementById('elab').value;
                 const iter = document.getElementById('iter').value;
+                const rintp = document.getElementById('rintp').value;
                 
                 const projectile = document.getElementById('projectile').value;
                 const projMass = document.getElementById('proj-mass').value;
@@ -843,6 +855,11 @@
                     iter: parseInt(iter)
                 };
                 
+                // Add rintp only if it has a value
+                if (rintp && rintp.trim() !== '') {
+                    formData.rintp = parseFloat(rintp);
+                }
+                
                 // Collect additional namelist parameters from advanced sections
                 const namelistForms = document.getElementById('namelist-forms');
                 if (namelistForms) {
@@ -865,17 +882,11 @@
                     });
                 }
                 
-                // Include parsed parameters from uploaded files
+                // Include parsed parameters from uploaded files (only if not already specified in form)
                 if (window.parsedFrescoParameters) {
                     Object.keys(window.parsedFrescoParameters).forEach(param => {
-                        let value = window.parsedFrescoParameters[param];
-                        
-                        // Special handling for elab - always use parsed value if it contains multiple energies
-                        if (param === 'elab' && typeof value === 'string' && value.includes(',')) {
-                            formData[param] = value;
-                            console.log(`Overriding elab with parsed values: ${value}`);
-                        } else if (!formData.hasOwnProperty(param)) {
-                            // Only add if not already in formData (form fields take precedence)
+                        if (!formData.hasOwnProperty(param)) {
+                            let value = window.parsedFrescoParameters[param];
                             // Try to parse as number if it looks like a number
                             if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
                                 value = parseFloat(value);
@@ -896,7 +907,7 @@ ${namelistSection}
 
  &PARTITION namep='${projectile}' massp=${projMass} zp=${projZ} 
  	    namet='${target}' masst=${targMass} zt=${targZ} qval=0.0 nex=1  /
- &STATES jp=${projSpin} bandp=1 ep=0.0000 cpot=1 jt=${targSpin} bandt=1 et=0.0000  /
+ &STATES jp=${projSpin} copyp=0 bandp=1 ep=0.0000 kk=0 tp=0 cpot=1 jt=${targSpin} copyt=0 bandt=1 et=0.0000 kkt=0 tt=0  /
  &partition /
  
  &POT kp=1 ap=${ap} at=${at} rc=${rc}  /`;

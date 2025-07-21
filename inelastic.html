@@ -15,6 +15,8 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J60NE88WR1"></script>
     <script src="assets/js/fresco-namelist.js"></script>
+    <script src="assets/js/fresco-parameter-manager.js"></script>
+    <script src="assets/js/fresco-integration.js"></script>
 </head>
 <body>
     <!-- Theme Toggle -->
@@ -98,13 +100,13 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="rintp" class="form-label">
-                            Integration radius (rintp)
+                            Integration mesh size (rintp)
                             <span class="custom-tooltip">
                                 <i class="fas fa-info-circle ms-1"></i>
-                                <span class="tooltip-text">Radius for numerical integration (typically 0.0 for automatic).</span>
+                                <span class="tooltip-text">Radial integration mesh size in fm. Typical values are 0.1-0.5 fm.</span>
                             </span>
                         </label>
-                        <input type="number" class="form-control" id="rintp" value="0.0" step="0.1">
+                        <input type="number" class="form-control" id="rintp" step="0.1">
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="rasym" class="form-label">
@@ -1131,6 +1133,9 @@
     <!-- Custom JavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if FrescoNamelist is available
+            console.log('DOM loaded, checking FrescoNamelist:', typeof window.FrescoNamelist);
+            
             // Initialize basic form fields with configuration values
             if (window.FrescoNamelist && window.FrescoNamelist.initializeBasicFields) {
                 window.FrescoNamelist.initializeBasicFields();
@@ -1141,25 +1146,43 @@
             
             // Toggle namelist section function
             window.toggleNamelistSection = function(sectionName) {
-                console.log('Toggle section:', sectionName); // Debug log
+                console.log('Toggle section called:', sectionName);
+                console.log('FrescoNamelist available:', typeof window.FrescoNamelist);
+                
                 const container = document.getElementById('namelist-forms');
+                if (!container) {
+                    console.error('Container namelist-forms not found');
+                    return;
+                }
+                
                 const existingSection = document.getElementById(`namelist-${sectionName}`);
                 
                 if (existingSection) {
                     // Section exists, remove it
                     existingSection.remove();
                     activeNamelistSections.delete(sectionName);
+                    console.log('Section removed:', sectionName);
                 } else {
                     // Section doesn't exist, create it
                     const sectionDiv = document.createElement('div');
                     sectionDiv.id = `namelist-${sectionName}`;
                     sectionDiv.className = 'namelist-section mt-3';
                     
+                    // Add a simple test content first
+                    sectionDiv.innerHTML = `<div class="glass-card"><h4>Loading ${sectionName}...</h4></div>`;
+                    
                     // First add the section to the DOM
                     container.appendChild(sectionDiv);
+                    console.log('Section div added to DOM');
                     
                     // Then create the form in it
-                    window.FrescoNamelist.createCategoryForm(sectionName, sectionDiv.id, {});
+                    if (window.FrescoNamelist && window.FrescoNamelist.createCategoryForm) {
+                        console.log('Creating category form...');
+                        window.FrescoNamelist.createCategoryForm(sectionName, sectionDiv.id, {});
+                    } else {
+                        console.error('FrescoNamelist not available or createCategoryForm not found');
+                        sectionDiv.innerHTML = '<div class="glass-card"><p class="text-danger">Error: FrescoNamelist configuration not loaded</p></div>';
+                    }
                     
                     activeNamelistSections.add(sectionName);
                 }
@@ -1477,6 +1500,7 @@
                 const header = document.getElementById('header').value || 'alpha+C12 inelastic scattering';
                 const hcm = document.getElementById('hcm').value;
                 const rmatch = document.getElementById('rmatch').value;
+                const rintp = document.getElementById('rintp').value;
                 const jtmax = document.getElementById('jtmax').value;
                 const absend = document.getElementById('absend').value;
                 const thmax = document.getElementById('thmax').value;
@@ -1522,6 +1546,11 @@
                     iblock: parseInt(iblock)
                 };
                 
+                // Add rintp only if it has a value
+                if (rintp && rintp.trim() !== '') {
+                    formData.rintp = parseFloat(rintp);
+                }
+                
                 // Collect additional namelist parameters from advanced sections
                 const namelistForms = document.getElementById('namelist-forms');
                 if (namelistForms) {
@@ -1544,6 +1573,27 @@
                     });
                 }
                 
+                // Include parsed parameters from uploaded files
+                if (window.parsedFrescoParameters) {
+                    Object.keys(window.parsedFrescoParameters).forEach(param => {
+                        let value = window.parsedFrescoParameters[param];
+                        
+                        // Special handling for elab - always use parsed value if it contains multiple energies
+                        if (param === 'elab' && typeof value === 'string' && value.includes(',')) {
+                            formData[param] = value;
+                            console.log(`Overriding elab with parsed values: ${value}`);
+                        } else if (!formData.hasOwnProperty(param)) {
+                            // Only add if not already in formData (form fields take precedence)
+                            // Try to parse as number if it looks like a number
+                            if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
+                                value = parseFloat(value);
+                            }
+                            formData[param] = value;
+                            console.log(`Including parsed parameter: ${param} = ${value}`);
+                        }
+                    });
+                }
+                
                 // Generate namelist using the configuration
                 const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
                 
@@ -1553,7 +1603,7 @@ NAMELIST
 ${namelistSection}
 
  &PARTITION namep='${projectile}' massp=${projMass} zp=${projZ} 
- 	    namet='${target}' masst=${targMass} zt=${targZ} qval=0.0 nex=${targExcited}  /`;
+ 	    namet='${target}' masst=${targMass} zt=${targZ} qval=0.0 nex=${targExcited} pwf=T /`;
 
                 // Get target excited states
                 const targStateSpins = document.querySelectorAll('.targ-state-spin');
@@ -1566,7 +1616,7 @@ ${namelistSection}
                 const groundStateEnergy = targStateEnergies[0].value;
                 
                 inputContent += `
- &STATES jp=0.0 bandp=1 ep=0.0000 cpot=1 jt=${groundStateSpin} bandt=${groundStateParity}1 et=${groundStateEnergy} /`;
+ &STATES jp=0.0 copyp=0 bandp=1 ep=0.0000 kkp=0 tp=0 cpot=1 jt=${groundStateSpin} copyt=0 bandt=${groundStateParity}1 et=${groundStateEnergy} kkt=0 tt=0 /`;
                 
                 // Add excited states
                 for (let i = 1; i < targStateSpins.length; i++) {
@@ -1575,7 +1625,7 @@ ${namelistSection}
                     const energy = targStateEnergies[i].value;
                     
                     inputContent += `
- &STATES copyp=1 		 cpot=1 jt=${spin} bandt=${parity}1 et=${energy} /`;
+ &STATES jp=0.0 copyp=1 bandp=1 ep=0.0000 kkp=0 tp=0 cpot=1 jt=${spin} copyt=0 bandt=${parity}1 et=${energy} kkt=0 tt=0 /`;
                 }
                 
                 inputContent += `
