@@ -208,8 +208,32 @@ function handleFileUpload(event, formType) {
     reader.onload = function(e) {
         try {
             const content = e.target.result;
-            parseAndPopulateForm(content, formType);
-            showNotification('Input file loaded successfully!', 'success');
+            
+            // Use parameter manager if available
+            if (typeof window.parameterManager !== 'undefined' && window.parameterManager) {
+                window.parameterManager.processUploadedFile(content)
+                    .then(results => {
+                        // Update parameter display if function exists
+                        if (typeof window.updateParameterDisplay === 'function') {
+                            window.updateParameterDisplay();
+                        }
+                        
+                        // Still run legacy parsing for other form fields
+                        parseAndPopulateForm(content, formType);
+                        
+                        showNotification(`File loaded successfully! ${results.processed} parameters processed, ${results.moved} moved to General.`, 'success');
+                    })
+                    .catch(error => {
+                        console.error('Parameter manager processing error:', error);
+                        // Fallback to legacy parsing
+                        parseAndPopulateForm(content, formType);
+                        showNotification('Input file loaded successfully (using legacy parsing)!', 'success');
+                    });
+            } else {
+                // Fallback to legacy parsing
+                parseAndPopulateForm(content, formType);
+                showNotification('Input file loaded successfully!', 'success');
+            }
         } catch (error) {
             console.error('Error parsing file:', error);
             showNotification('Error parsing input file: ' + error.message, 'error');

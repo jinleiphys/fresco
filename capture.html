@@ -12,6 +12,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="assets/css/fresco-styles.css">
+    <link rel="stylesheet" href="assets/css/dynamic-parameters.css">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J60NE88WR1"></script>
     <script src="assets/js/fresco-namelist.js"></script>
@@ -175,53 +176,49 @@
                 </div>
             </div>
 
-            <!-- Advanced FRESCO Namelist Parameters -->
+            <!-- Dynamic Parameter Management System -->
             <div class="glass-card advanced-fresco-card">
-                <h3><i class="fas fa-sliders-h me-2"></i>Advanced FRESCO Parameters</h3>
-                <p class="text-white-50 mb-3">Configure additional namelist parameters. Only non-default values will be included in the generated input file.</p>
+                <h3><i class="fas fa-sliders-h me-2"></i>FRESCO Parameter Management</h3>
+                <p class="text-white-50 mb-3">Dynamically manage parameters between General and Advanced sections. Upload a FRESCO file to automatically populate parameters.</p>
+                
+                <!-- Parameter Sections -->
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <button type="button" class="glass-btn" onclick="toggleNamelistSection('radialCoordinates')">
-                            <i class="fas fa-ruler me-2"></i>Radial Coordinates
-                        </button>
+                    <!-- General Parameters -->
+                    <div class="col-md-6">
+                        <div class="parameter-section mb-3" style="border: 1px solid #444; border-radius: 8px; overflow: hidden;">
+                            <div class="section-header" style="background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                                <span><i class="fas fa-star me-2"></i>General FRESCO Parameters</span>
+                                <span class="badge bg-primary" id="generalCount">0</span>
+                            </div>
+                            <div class="parameter-list" id="generalParameters" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+                                <!-- General parameters will be populated here -->
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <button type="button" class="glass-btn" onclick="toggleNamelistSection('partialWaves')">
-                            <i class="fas fa-wave-square me-2"></i>Partial Waves
-                        </button>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <button type="button" class="glass-btn" onclick="toggleNamelistSection('angularDistributions')">
-                            <i class="fas fa-chart-line me-2"></i>Angular Distributions
-                        </button>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <button type="button" class="glass-btn" onclick="toggleNamelistSection('coupledEquations')">
-                            <i class="fas fa-link me-2"></i>Coupled Equations
-                        </button>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <button type="button" class="glass-btn" onclick="toggleNamelistSection('incidentChannel')">
-                            <i class="fas fa-arrow-right me-2"></i>Incident Channel
-                        </button>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <button type="button" class="glass-btn" onclick="toggleNamelistSection('solvingEquations')">
-                            <i class="fas fa-calculator me-2"></i>Solving Equations
-                        </button>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <button type="button" class="glass-btn" onclick="toggleNamelistSection('traceVariables')">
-                            <i class="fas fa-bug me-2"></i>Trace Variables
-                        </button>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <button type="button" class="glass-btn" onclick="toggleNamelistSection('outputDetails')">
-                            <i class="fas fa-file-export me-2"></i>Output Details
-                        </button>
+
+                    <!-- Advanced Parameters -->
+                    <div class="col-md-6">
+                        <div class="parameter-section mb-3" style="border: 1px solid #444; border-radius: 8px; overflow: hidden;">
+                            <div class="section-header" style="background: #8e44ad; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                                <span><i class="fas fa-cogs me-2"></i>Advanced FRESCO Parameters</span>
+                                <span class="badge bg-secondary" id="advancedCount">0</span>
+                            </div>
+                            <div class="parameter-list" id="advancedParameters" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+                                <!-- Advanced parameters will be populated here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div id="namelist-forms" class="mt-3"></div>
+                
+                <!-- Parameter Management Controls -->
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-outline-light btn-sm me-2" onclick="resetParametersToDefaults()">
+                        <i class="fas fa-undo me-1"></i>Reset to Defaults
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm" onclick="showParameterState()">
+                        <i class="fas fa-info-circle me-1"></i>Show Current State
+                    </button>
+                </div>
             </div>
 
             <!-- Partitions Section -->
@@ -799,7 +796,19 @@
     
     <!-- Custom JavaScript -->
     <script>
+        // Initialize parameter manager
+        let parameterManager;
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the parameter manager
+            if (typeof FrescoParameterManager !== 'undefined') {
+                parameterManager = new FrescoParameterManager();
+                updateParameterDisplay();
+                console.log('Parameter manager initialized for capture reactions');
+            } else {
+                console.error('FrescoParameterManager not available');
+            }
+            
             // Check if FrescoNamelist is available
             console.log('DOM loaded, checking FrescoNamelist:', typeof window.FrescoNamelist);
             
@@ -892,136 +901,102 @@
             document.getElementById('download-btn').addEventListener('click', function() {
                 downloadInputFile();
             });
+        });
+        
+        // Parameter management functions
+        function updateParameterDisplay() {
+            if (!parameterManager) return;
             
-            // Generate input file function
-            function generateInputFile() {
-                // Get form values
-                const header = document.getElementById('header').value || document.getElementById('projectile').value + '(' + document.getElementById('target').value + ',g)' + document.getElementById('residual').value;
-                const hcm = document.getElementById('hcm').value;
-                const rmatch = document.getElementById('rmatch').value;
-                const jtmax = document.getElementById('jtmax').value;
-                const absend = document.getElementById('absend').value;
-                const thmax = document.getElementById('thmax').value;
-                const thinc = document.getElementById('thinc').value;
-                const elab = document.getElementById('elab').value;
-                const iter = document.getElementById('iter').value;
-                const rintp = document.getElementById('rintp').value;
+            const allocation = parameterManager.getParameterAllocation();
+            
+            // Update counts
+            document.getElementById('generalCount').textContent = allocation.general.count;
+            document.getElementById('advancedCount').textContent = allocation.advanced.count;
+            
+            // Update parameter lists
+            updateParameterList('generalParameters', allocation.general.parameters, 'advanced');
+            updateParameterList('advancedParameters', allocation.advanced.parameters, 'general');
+        }
+
+        function updateParameterList(containerId, parameters, moveToSection) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            parameters.forEach(param => {
+                const item = document.createElement('div');
+                item.className = `parameter-item d-flex justify-content-between align-items-center p-2 mb-2 rounded ${param.isFromFile ? 'border-start border-success border-3' : ''}`;
+                item.style.backgroundColor = param.isFromFile ? '#f8fff8' : '#f8f9fa';
                 
-                const projectile = document.getElementById('projectile').value;
-                const projMass = document.getElementById('proj-mass').value;
-                const projZ = document.getElementById('proj-z').value;
-                const projSpin = document.getElementById('proj-spin').value;
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'd-flex align-items-center';
                 
-                const target = document.getElementById('target').value;
-                const targMass = document.getElementById('targ-mass').value;
-                const targZ = document.getElementById('targ-z').value;
-                const targSpin = document.getElementById('targ-spin').value;
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'fw-bold';
+                nameSpan.textContent = param.label || param.name;
+                nameSpan.style.color = '#333';
                 
-                const residual = document.getElementById('residual').value;
-                const resMass = document.getElementById('res-mass').value;
-                const resZ = document.getElementById('res-z').value;
-                const resSpin = document.getElementById('res-spin').value;
-                
-                const qval = document.getElementById('qval').value;
-                const rc = document.getElementById('rc').value;
-                
-                const vDepth = document.getElementById('v-depth').value;
-                const vRadius = document.getElementById('v-radius').value;
-                const vDiffuse = document.getElementById('v-diffuse').value;
-                const wDepth = document.getElementById('w-depth').value;
-                const wRadius = document.getElementById('w-radius').value;
-                const wDiffuse = document.getElementById('w-diffuse').value;
-                const vsoDepth = document.getElementById('vso-depth').value;
-                const vsoRadius = document.getElementById('vso-radius').value;
-                const vsoDiffuse = document.getElementById('vso-diffuse').value;
-                
-                const bsVDepth = document.getElementById('bs-v-depth').value;
-                const bsVRadius = document.getElementById('bs-v-radius').value;
-                const bsVDiffuse = document.getElementById('bs-v-diffuse').value;
-                const bsVsoDepth = document.getElementById('bs-vso-depth').value;
-                const bsVsoRadius = document.getElementById('bs-vso-radius').value;
-                const bsVsoDiffuse = document.getElementById('bs-vso-diffuse').value;
-                
-                const bsN = document.getElementById('bs-n').value;
-                const bsL = document.getElementById('bs-l').value;
-                const bsJ = document.getElementById('bs-j').value;
-                
-                const bindingEnergy = document.getElementById('binding-energy').value;
-                const gammaSpin = document.getElementById('gamma-spin').value;
-                const emMult = document.getElementById('em-mult').value;
-                
-                // Determine multipolarity based on selection
-                let multipolarity = '';
-                let ip1 = '-1';
-                let ip2 = '1';
-                
-                switch(emMult) {
-                    case '1': // E1 only
-                        multipolarity = 'E1 only';
-                        ip1 = '-1';
-                        ip2 = '1';
-                        break;
-                    case '2': // M1 only
-                        multipolarity = 'M1 only';
-                        ip1 = '-1';
-                        ip2 = '2';
-                        break;
-                    case '3': // E2 only
-                        multipolarity = 'E2 only';
-                        ip1 = '-2';
-                        ip2 = '1';
-                        break;
-                    case '4': // E1 + M1
-                        multipolarity = 'E1 + M1';
-                        ip1 = '1';
-                        ip2 = '0';
-                        break;
-                    case '5': // E1 + E2
-                        multipolarity = 'E1 + E2';
-                        ip1 = '2';
-                        ip2 = '1';
-                        break;
-                    case '6': // All multipoles up to E2
-                        multipolarity = 'All multipoles up to E2';
-                        ip1 = '2';
-                        ip2 = '0';
-                        break;
+                const valueSpan = document.createElement('span');
+                valueSpan.className = 'ms-2 text-muted small';
+                if (param.currentValue !== null) {
+                    valueSpan.textContent = `= ${param.currentValue}`;
                 }
                 
-                // Collect all form data including basic and advanced parameters
-                const formData = {
-                    hcm: parseFloat(hcm),
-                    rmatch: parseFloat(rmatch),
-                    jtmin: 0.0,
-                    jtmax: parseFloat(jtmax),
-                    absend: parseFloat(absend),
-                    thmin: 0.0,
-                    thmax: parseFloat(thmax),
-                    thinc: parseFloat(thinc),
-                    chans: 1,
-                    smats: 2,
-                    xstabl: 1,
-                    elab: elab,
-                    iter: parseInt(iter)
+                leftDiv.appendChild(nameSpan);
+                leftDiv.appendChild(valueSpan);
+                
+                const rightDiv = document.createElement('div');
+                rightDiv.className = 'd-flex align-items-center';
+                
+                const moveBtn = document.createElement('button');
+                moveBtn.className = 'btn btn-sm btn-outline-secondary me-2';
+                moveBtn.innerHTML = `<i class="fas fa-arrow-${moveToSection === 'advanced' ? 'down' : 'up'}"></i>`;
+                moveBtn.title = `Move to ${moveToSection} section`;
+                moveBtn.onclick = () => {
+                    parameterManager.moveParameter(param.name, moveToSection);
+                    updateParameterDisplay();
                 };
                 
-                // Add rintp only if it has a value
-                if (rintp && rintp.trim() !== '') {
-                    formData.rintp = parseFloat(rintp);
-                }
+                rightDiv.appendChild(moveBtn);
                 
-                // Collect additional namelist parameters from advanced sections
-                const namelistForms = document.getElementById('namelist-forms');
-                if (namelistForms) {
-                    const inputs = namelistForms.querySelectorAll('input, select');
-                    inputs.forEach(input => {
-                        const name = input.name;
-                        const value = input.value;
-                        if (name && value !== '' && value !== null && value !== undefined) {
-                            if (input.type === 'number') {
-                                formData[name] = parseFloat(value);
-                            } else if (input.type === 'select-one' && input.selectedOptions[0]) {
-                                const selectedValue = input.selectedOptions[0].value;
+                item.appendChild(leftDiv);
+                item.appendChild(rightDiv);
+                container.appendChild(item);
+            });
+        }
+        
+        function resetParametersToDefaults() {
+            if (parameterManager) {
+                parameterManager.resetToDefaultAllocation();
+                updateParameterDisplay();
+                console.log('Parameters reset to default allocation');
+            }
+        }
+
+        function showParameterState() {
+            if (!parameterManager) return;
+            
+            const allocation = parameterManager.getParameterAllocation();
+            console.log('Current Parameter State:', allocation);
+            alert(`Current State:\n\nGeneral: ${allocation.general.count} parameters\nAdvanced: ${allocation.advanced.count} parameters\n\nSee console for detailed information.`);
+        }
+        
+        // Generate input file function
+        function generateInputFile() {
+            // Get form values
+            const header = document.getElementById('header').value || document.getElementById('projectile').value + '(' + document.getElementById('target').value + ',g)' + document.getElementById('residual').value;
+            const hcm = document.getElementById('hcm').value;
+            const rmatch = document.getElementById('rmatch').value;
+            const jtmax = document.getElementById('jtmax').value;
+            const absend = document.getElementById('absend').value;
+            const thmax = document.getElementById('thmax').value;
+            const thinc = document.getElementById('thinc').value;
+            const elab = document.getElementById('elab').value;
+            const iter = document.getElementById('iter').value;
+            const rintp = document.getElementById('rintp').value;
+            
+            // Continue with the rest of the generateInputFile function...
                                 if (selectedValue === 'true') formData[name] = true;
                                 else if (selectedValue === 'false') formData[name] = false;
                                 else formData[name] = selectedValue;
@@ -1052,12 +1027,244 @@
                         }
                     });
                 }
+            
+            // Collect all form data including basic and advanced parameters
+            const formData = {
+                hcm: parseFloat(hcm),
+                rmatch: parseFloat(rmatch),
+                jtmin: 0.0,
+                jtmax: parseFloat(jtmax),
+                absend: parseFloat(absend),
+                thmin: 0.0,
+                thmax: parseFloat(thmax),
+                thinc: parseFloat(thinc),
+                chans: 1,
+                smats: 2,
+                xstabl: 1,
+                elab: elab,
+                iter: parseInt(iter)
+            };
+            
+            // Add rintp only if it has a value
+            if (rintp && rintp.trim() !== '') {
+                formData.rintp = parseFloat(rintp);
+            }
+            
+            // Collect parameters from the parameter manager
+            if (parameterManager) {
+                const allocation = parameterManager.getParameterAllocation();
                 
-                // Generate namelist using the configuration
-                const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
+                // Add general parameters with current values
+                allocation.general.parameters.forEach(param => {
+                    if (param.currentValue !== null && param.currentValue !== undefined) {
+                        let value = param.currentValue;
+                        // Parse numeric values
+                        if (param.type === 'number' && typeof value === 'string') {
+                            value = parseFloat(value);
+                        } else if (param.type === 'integer' && typeof value === 'string') {
+                            value = parseInt(value);
+                        } else if (param.type === 'boolean') {
+                            value = value === true || value === 'true' || value === 'T' || value === '1';
+                        }
+                        formData[param.name] = value;
+                    }
+                });
                 
-                // Build the input file content
-                let inputContent = `${header}
+                // Add advanced parameters with non-default values
+                allocation.advanced.parameters.forEach(param => {
+                    if (param.currentValue !== null && param.currentValue !== undefined && param.currentValue !== param.default) {
+                        let value = param.currentValue;
+                        // Parse numeric values
+                        if (param.type === 'number' && typeof value === 'string') {
+                            value = parseFloat(value);
+                        } else if (param.type === 'integer' && typeof value === 'string') {
+                            value = parseInt(value);
+                        } else if (param.type === 'boolean') {
+                            value = value === true || value === 'true' || value === 'T' || value === '1';
+                        }
+                        formData[param.name] = value;
+                    }
+                });
+            }
+            
+            // Collect additional namelist parameters from advanced sections
+            const namelistForms = document.getElementById('namelist-forms');
+            if (namelistForms) {
+                const inputs = namelistForms.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    const name = input.name;
+                    const value = input.value;
+                    if (name && value !== '' && value !== null && value !== undefined && !formData.hasOwnProperty(name)) {
+                        if (input.type === 'number') {
+                            formData[name] = parseFloat(value);
+                        } else if (input.type === 'select-one' && input.selectedOptions[0]) {
+                            const selectedValue = input.selectedOptions[0].value;
+                            if (selectedValue === 'true') formData[name] = true;
+                            else if (selectedValue === 'false') formData[name] = false;
+                            else formData[name] = selectedValue;
+                        } else {
+                            formData[name] = value;
+                        }
+                    }
+                });
+            }
+            
+            // Include parsed parameters from uploaded files (only if not already specified in form)
+            if (window.parsedFrescoParameters) {
+                Object.keys(window.parsedFrescoParameters).forEach(param => {
+                    if (!formData.hasOwnProperty(param)) {
+                        let value = window.parsedFrescoParameters[param];
+                        // Try to parse as number if it looks like a number
+                        if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
+                            value = parseFloat(value);
+                        }
+                        formData[param] = value;
+                        console.log(`Including parsed parameter: ${param} = ${value}`);
+                    }
+                });
+            }
+                
+            // Generate namelist using the configuration
+            const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
+        }
+
+        function resetParametersToDefaults() {
+            if (!parameterManager) return;
+            
+            if (confirm('Reset all parameters to default allocation?')) {
+                parameterManager.resetToDefaults();
+                updateParameterDisplay();
+                console.log('Parameters reset to default allocation');
+            }
+        }
+
+        function showParameterState() {
+            if (!parameterManager) return;
+            
+            const allocation = parameterManager.getParameterAllocation();
+            console.log('Current Parameter State:', allocation);
+            alert(`Current State:\n\nGeneral: ${allocation.general.count} parameters\nAdvanced: ${allocation.advanced.count} parameters\n\nSee console for detailed information.`);
+        }
+        
+        // Generate input file function
+        function generateInputFile() {
+            // Get form values
+            const header = document.getElementById('header').value || document.getElementById('projectile').value + '(' + document.getElementById('target').value + ',g)' + document.getElementById('residual').value;
+            const hcm = document.getElementById('hcm').value;
+            const rmatch = document.getElementById('rmatch').value;
+            const jtmax = document.getElementById('jtmax').value;
+            const absend = document.getElementById('absend').value;
+            const thmax = document.getElementById('thmax').value;
+            const thinc = document.getElementById('thinc').value;
+            const elab = document.getElementById('elab').value;
+            const iter = document.getElementById('iter').value;
+            
+            const projectile = document.getElementById('projectile').value;
+            const projMass = document.getElementById('proj-mass').value;
+            const projZ = document.getElementById('proj-z').value;
+            const projSpin = document.getElementById('proj-spin').value;
+            
+            const target = document.getElementById('target').value;
+            const targMass = document.getElementById('targ-mass').value;
+            const targZ = document.getElementById('targ-z').value;
+            const targSpin = document.getElementById('targ-spin').value;
+            
+            const residual = document.getElementById('residual').value;
+            const resMass = document.getElementById('res-mass').value;
+            const resZ = document.getElementById('res-z').value;
+            const resSpin = document.getElementById('res-spin').value;
+            
+            const qval = document.getElementById('qval').value;
+            const rc = document.getElementById('rc').value;
+            
+            const vDepth = document.getElementById('v-depth').value;
+            const vRadius = document.getElementById('v-radius').value;
+            const vDiffuse = document.getElementById('v-diffuse').value;
+            const wDepth = document.getElementById('w-depth').value;
+            const wRadius = document.getElementById('w-radius').value;
+            const wDiffuse = document.getElementById('w-diffuse').value;
+            const vsoDepth = document.getElementById('vso-depth').value;
+            const vsoRadius = document.getElementById('vso-radius').value;
+            const vsoDiffuse = document.getElementById('vso-diffuse').value;
+            
+            const bsVDepth = document.getElementById('bs-v-depth').value;
+            const bsVRadius = document.getElementById('bs-v-radius').value;
+            const bsVDiffuse = document.getElementById('bs-v-diffuse').value;
+            const bsVsoDepth = document.getElementById('bs-vso-depth').value;
+            const bsVsoRadius = document.getElementById('bs-vso-radius').value;
+            const bsVsoDiffuse = document.getElementById('bs-vso-diffuse').value;
+            
+            const bsN = document.getElementById('bs-n').value;
+            const bsL = document.getElementById('bs-l').value;
+            const bsJ = document.getElementById('bs-j').value;
+            
+            const bindingEnergy = document.getElementById('binding-energy').value;
+            const gammaSpin = document.getElementById('gamma-spin').value;
+            const emMult = document.getElementById('em-mult').value;
+            
+            // Determine multipolarity based on selection
+            let multipolarity = '';
+            let ip1 = '-1';
+            let ip2 = '1';
+            
+            switch(emMult) {
+                case '1': // E1 only
+                    multipolarity = 'E1 only';
+                    ip1 = '-1';
+                    ip2 = '1';
+                    break;
+                case '2': // M1 only
+                    multipolarity = 'M1 only';
+                    ip1 = '-1';
+                    ip2 = '2';
+                    break;
+                case '3': // E2 only
+                    multipolarity = 'E2 only';
+                    ip1 = '-2';
+                    ip2 = '1';
+                    break;
+                case '4': // E1 + M1
+                    multipolarity = 'E1 + M1';
+                    ip1 = '1';
+                    ip2 = '0';
+                    break;
+                case '5': // E1 + E2
+                    multipolarity = 'E1 + E2';
+                    ip1 = '2';
+                    ip2 = '1';
+                    break;
+                case '6': // All multipoles up to E2
+                    multipolarity = 'All multipoles up to E2';
+                    ip1 = '2';
+                    ip2 = '0';
+                    break;
+            }
+            
+            // Collect all form data including basic and advanced parameters
+            const formData = {
+                hcm: parseFloat(hcm),
+                rmatch: parseFloat(rmatch),
+                jtmin: 0,
+                jtmax: parseFloat(jtmax),
+                absend: parseFloat(absend),
+                thmin: 0,
+                thmax: parseFloat(thmax),
+                thinc: parseFloat(thinc),
+                iter: parseInt(iter),
+                elab: elab
+            };
+            
+            // Use parameter manager to get all parameters
+            if (parameterManager) {
+                const allParameters = parameterManager.getAllParameters();
+                Object.assign(formData, allParameters);
+            }
+            
+            // Generate namelist using the configuration
+            const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
+            
+            // Build the input file content
+            let inputContent = `${header}
 NAMELIST
 ${namelistSection}
 
@@ -1071,20 +1278,20 @@ ${namelistSection}
  &Pot kp=1 type= 0 shape= 0 p(1:3)=   ${targMass}.0000   0.0000   ${rc} /                                     
  &Pot kp=1 type= 1 shape= 0 p(1:3)=   ${vDepth}   ${vRadius}   ${vDiffuse} /`;
 
-                // Add imaginary potential if W > 0
-                if (wDepth > 0) {
-                    inputContent += `                                     
- &Pot kp=1 type= 2 shape= 0 p(1:3)=   ${wDepth}   ${wRadius}   ${wDiffuse} /`;
-                }
-                
-                // Add spin-orbit potential if Vso > 0
-                if (vsoDepth > 0) {
-                    inputContent += `                                     
- &Pot kp=1 type= 3 shape= 0 p(1:3)=   ${vsoDepth}   ${vsoRadius}   ${vsoDiffuse} /`;
-                }
-                
-                // Add bound state potential
+            // Add imaginary potential if W > 0
+            if (wDepth > 0) {
                 inputContent += `                                     
+ &Pot kp=1 type= 2 shape= 0 p(1:3)=   ${wDepth}   ${wRadius}   ${wDiffuse} /`;
+            }
+            
+            // Add spin-orbit potential if Vso > 0
+            if (vsoDepth > 0) {
+                inputContent += `                                     
+ &Pot kp=1 type= 3 shape= 0 p(1:3)=   ${vsoDepth}   ${vsoRadius}   ${vsoDiffuse} /`;
+            }
+            
+            // Add bound state potential
+            inputContent += `                                     
  &Pot kp=2 type= 0 shape= 0 p(1:3)=   ${targMass}.0000   0.0000   ${rc} /                                     
  &Pot kp=2 type= 1 shape= 0 p(1:3)=   ${bsVDepth}   ${bsVRadius}   ${bsVDiffuse} /                                     
  &Pot kp=2 type= 3 shape= 0 p(1:3)=   ${bsVsoDepth}   ${bsVsoRadius}   ${bsVsoDiffuse} /                                     
@@ -1097,53 +1304,52 @@ ${namelistSection}
  &cfp  in=2 ib=1 ia=1 kn=1  a=1.000     /
 `;
 
-                // Update output area
-                document.getElementById('output').textContent = inputContent;
-            }
+            // Update output area
+            document.getElementById('output').textContent = inputContent;
+        }
+        
+        // Copy to clipboard function
+        function copyToClipboard() {
+            const outputText = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(outputText).then(
+                function() {
+                    // Success message
+                    const copyBtn = document.getElementById('copy-btn');
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                    
+                    setTimeout(function() {
+                        copyBtn.innerHTML = originalText;
+                    }, 2000);
+                },
+                function() {
+                    alert('Failed to copy to clipboard');
+                }
+            );
+        }
+        
+        // Download input file function
+        function downloadInputFile() {
+            const outputText = document.getElementById('output').textContent;
+            const projectile = document.getElementById('projectile').value;
+            const target = document.getElementById('target').value;
+            const fileName = `${projectile}_${target}_capture.in`;
             
-            // Copy to clipboard function
-            function copyToClipboard() {
-                const outputText = document.getElementById('output').textContent;
-                navigator.clipboard.writeText(outputText).then(
-                    function() {
-                        // Success message
-                        const copyBtn = document.getElementById('copy-btn');
-                        const originalText = copyBtn.innerHTML;
-                        copyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
-                        
-                        setTimeout(function() {
-                            copyBtn.innerHTML = originalText;
-                        }, 2000);
-                    },
-                    function() {
-                        alert('Failed to copy to clipboard');
-                    }
-                );
-            }
+            const blob = new Blob([outputText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
             
-            // Download input file function
-            function downloadInputFile() {
-                const outputText = document.getElementById('output').textContent;
-                const projectile = document.getElementById('projectile').value;
-                const target = document.getElementById('target').value;
-                const fileName = `${projectile}_${target}_capture.in`;
-                
-                const blob = new Blob([outputText], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                
-                // Clean up
-                setTimeout(function() {
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                }, 0);
-            }
-        });
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            setTimeout(function() {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 0);
+        }
     </script>
 </body>
 </html>
