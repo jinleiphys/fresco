@@ -24,12 +24,13 @@ The application consists of reaction-type-specific HTML pages that share common 
 
 **Shared JavaScript Modules (`assets/js/`):**
 - `fresco-namelist.js` - Complete definition of all 84 FRESCO namelist parameters with metadata (tooltips, defaults, types, validation)
-- `fresco-parameter-manager.js` - Dynamic parameter categorization system
+- `fresco-parameter-manager.js` - Dynamic parameter categorization system (object, not a constructor)
 - `fresco-common.js` - File parsing, form population utilities, and theme management
 - `fresco-integration.js` - UI integration and event handling
-- `fresco-shared-components.js` - Shared HTML components (footer, theme toggle, home link) that are dynamically injected
+- `fresco-shared-components.js` - Shared HTML components (footer, theme toggle, home link) dynamically injected into all pages
+- `fresco-generator.js` - Shared input file generation functions (copy to clipboard, download file, button initialization)
 
-All HTML files load these five JavaScript files in order. The shared components file automatically injects common elements (footer, theme toggle, home link) into all pages when the DOM loads, eliminating code duplication.
+All HTML files load these six JavaScript files in order. Each page defines its own reaction-specific `window.generateInputFile()` function, while `fresco-generator.js` provides shared `copyToClipboard()` and `downloadInputFile()` functions that work across all pages.
 
 ### Dynamic Parameter System
 
@@ -195,18 +196,38 @@ To update the footer, theme toggle, or home link across all pages, edit `fresco-
 - `FrescoSharedComponents.createUploadSection(formType)` - Generate file upload UI
 - `FrescoSharedComponents.createActionButtons(formType)` - Generate action buttons (Generate, Copy, Download)
 
+### Input File Generation System
+
+The `fresco-generator.js` file provides shared functionality for all reaction types:
+
+**Shared Functions (used by all pages):**
+- `FrescoGenerator.copyToClipboard()` - Copy generated input to clipboard with visual feedback
+- `FrescoGenerator.downloadInputFile()` - Download generated input as .in file
+- `FrescoGenerator.initializeButtons()` - Auto-wires button click handlers on page load
+
+**Page-Specific Functions:**
+Each HTML page defines its own `window.generateInputFile()` function with reaction-specific logic:
+- `elastic.html` - Generates elastic scattering input with &POT sections
+- `inelastic.html` - Generates inelastic input with excited states
+- `transfer.html` - Generates transfer input with overlaps
+- `capture.html` - Generates capture input with EM transitions
+- `breakup.html` - Generates CDCC breakup input with continuum bins
+
+**Important:** `FrescoParameterManager` is an object (use `window.FrescoParameterManager.init()`), NOT a constructor (don't use `new`).
+
 ## Common Pitfalls
 
 1. **Parameter Count Mismatch**: Always ensure General + Advanced = 84 total parameters. The system validates this automatically.
 
 2. **Default Value Handling**: Parameters with `default: null` are NOT written to output unless user provides a value. Parameters with specific defaults (e.g., `default: 0.1`) are only written if the user changes them.
 
-3. **Script Load Order**: The five JavaScript files must be loaded in this exact order:
+3. **Script Load Order**: The six JavaScript files must be loaded in this exact order:
    - `fresco-namelist.js` (defines parameters)
-   - `fresco-parameter-manager.js` (categorization logic)
+   - `fresco-parameter-manager.js` (categorization logic - note: it's an object, NOT a constructor)
    - `fresco-common.js` (parsing utilities and theme management)
    - `fresco-integration.js` (UI binding)
    - `fresco-shared-components.js` (shared HTML components injection)
+   - `fresco-generator.js` (shared generation functions and button handlers)
 
 4. **Namelist Format**: FRESCO is strict about namelist format. Always use `parameter=value` (no spaces around `=`) and terminate with `/` on a new line.
 
