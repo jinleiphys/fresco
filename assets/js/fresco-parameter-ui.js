@@ -24,6 +24,10 @@ window.FrescoParameterUI = {
         if (typeof window.FrescoParameterManager !== 'undefined') {
             this.parameterManager = window.FrescoParameterManager;
             this.parameterManager.init();
+
+            // Ensure form fields exist for all general parameters
+            this.ensureGeneralParameterFields();
+
             this.updateParameterDisplay();
             console.log('Parameter manager initialized');
         } else {
@@ -37,6 +41,26 @@ window.FrescoParameterUI = {
     },
 
     /**
+     * Ensure all general parameters have form fields in the General FRESCO Parameters section
+     */
+    ensureGeneralParameterFields: function() {
+        if (!this.parameterManager) return;
+
+        const allocation = this.parameterManager.getCurrentCategorization();
+
+        allocation.general.forEach(param => {
+            // Check if this parameter already has a form field
+            const existing = document.getElementById(param.name);
+            const generalSection = this.findGeneralParametersSection();
+
+            // If it doesn't exist in the General section, create it
+            if (!existing || !generalSection.contains(existing)) {
+                this.addParameterToGeneralSection(param.name, param.currentValue);
+            }
+        });
+    },
+
+    /**
      * Update the parameter display UI
      */
     updateParameterDisplay: function() {
@@ -44,15 +68,38 @@ window.FrescoParameterUI = {
 
         const allocation = this.parameterManager.getCurrentCategorization();
 
-        // Update counts
+        // Filter out parameters that already have form fields in General FRESCO Parameters section
+        const generalSection = this.findGeneralParametersSection();
+        const existingFieldIds = new Set();
+
+        if (generalSection) {
+            const inputs = generalSection.querySelectorAll('input[id], select[id], textarea[id]');
+            inputs.forEach(input => {
+                if (input.id) existingFieldIds.add(input.id);
+            });
+        }
+
+        // Count actual form fields in General FRESCO Parameters
+        const actualGeneralCount = existingFieldIds.size;
+
+        // For Parameter Management display, show parameters that can be moved
+        // (those not already as form fields, or those that were dynamically added)
+        const displayGeneral = allocation.general.filter(param => {
+            // Show if it's not in the default params (these are already visible as form fields)
+            return !this.parameterManager.defaultGeneralParams.includes(param.name) || param.isFromFile;
+        });
+
+        const displayAdvanced = allocation.advanced;
+
+        // Update counts to reflect actual form fields
         const generalCount = document.getElementById('generalCount');
         const advancedCount = document.getElementById('advancedCount');
-        if (generalCount) generalCount.textContent = allocation.general.length;
-        if (advancedCount) advancedCount.textContent = allocation.advanced.length;
+        if (generalCount) generalCount.textContent = actualGeneralCount;
+        if (advancedCount) advancedCount.textContent = displayAdvanced.length;
 
-        // Update parameter lists
-        this.updateParameterList('generalParameters', allocation.general, 'advanced');
-        this.updateParameterList('advancedParameters', allocation.advanced, 'general');
+        // Update parameter lists - only show moveable parameters
+        this.updateParameterList('generalParameters', displayGeneral, 'advanced');
+        this.updateParameterList('advancedParameters', displayAdvanced, 'general');
     },
 
     /**
