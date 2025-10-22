@@ -20,6 +20,7 @@
     <script src="assets/js/fresco-common.js"></script>
     <script src="assets/js/dynamic-parameter-manager.js"></script>
     <script src="assets/js/fresco-integration.js"></script>
+    <script src="assets/js/fresco-generator.js"></script>
     <script src="assets/js/fresco-shared-components.js"></script>
 </head>
 <body>
@@ -1125,7 +1126,7 @@
         function updateParameterDisplay() {
             if (!parameterManager) return;
             
-            const allocation = parameterManager.getParameterAllocation();
+            const allocation = parameterManager.getCurrentCategorization();
             
             // Toggle namelist section function
             window.toggleNamelistSection = function(sectionName) {
@@ -1169,12 +1170,12 @@
                     
                     activeNamelistSections.add(sectionName);
             // Update counts
-            document.getElementById('generalCount').textContent = allocation.general.count;
-            document.getElementById('advancedCount').textContent = allocation.advanced.count;
+            document.getElementById('generalCount').textContent = allocation.general.length;
+            document.getElementById('advancedCount').textContent = allocation.advanced.length;
             
             // Update parameter lists
-            updateParameterList('generalParameters', allocation.general.parameters, 'advanced');
-            updateParameterList('advancedParameters', allocation.advanced.parameters, 'general');
+            updateParameterList('generalParameters', allocation.general, 'advanced');
+            updateParameterList('advancedParameters', allocation.advanced, 'general');
         }
 
         function updateParameterList(containerId, parameters, moveToSection) {
@@ -1245,9 +1246,9 @@
         function showParameterState() {
             if (!parameterManager) return;
             
-            const allocation = parameterManager.getParameterAllocation();
+            const allocation = parameterManager.getCurrentCategorization();
             console.log('Current Parameter State:', allocation);
-            alert(`Current State:\n\nGeneral: ${allocation.general.count} parameters\nAdvanced: ${allocation.advanced.count} parameters\n\nSee console for detailed information.`);
+            alert(`Current State:\n\nGeneral: ${allocation.general.length} parameters\nAdvanced: ${allocation.advanced.length} parameters\n\nSee console for detailed information.`);
         }
             
             // Potential management
@@ -1524,25 +1525,8 @@
             
             for (let i = 1; i < parseInt(projExcitedInput.value); i++) {
                 addProjectileState();
-            }
-            
-            // Generate FRESCO input file
-            document.getElementById('generate-btn').addEventListener('click', function() {
-                generateInputFile();
-            });
-
-            // Copy to clipboard
-            document.getElementById('copy-btn').addEventListener('click', function() {
-                copyToClipboard();
-            });
-
-            // Download file
-            document.getElementById('download-btn').addEventListener('click', function() {
-                downloadInputFile();
-            });
-            
-            // Generate input file function
-            function generateInputFile() {
+            }            // Generate input file function
+            window.generateInputFile = function() {
                 // Get form values
                 const header = document.getElementById('header').value || 'alpha+C12 inelastic scattering';
                 const hcm = document.getElementById('hcm').value;
@@ -1747,47 +1731,8 @@ ${potLine}`;
             }
             
             // Copy to clipboard function
-            function copyToClipboard() {
-                const outputText = document.getElementById('output').textContent;
-                navigator.clipboard.writeText(outputText).then(
-                    function() {
-                        // Success message
-                        const copyBtn = document.getElementById('copy-btn');
-                        const originalText = copyBtn.innerHTML;
-                        copyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
-                        
-                        setTimeout(function() {
-                            copyBtn.innerHTML = originalText;
-                        }, 2000);
-                    },
-                    function() {
-                        alert('Failed to copy to clipboard');
-                    }
-                );
-            }
             
             // Download input file function
-            function downloadInputFile() {
-                const outputText = document.getElementById('output').textContent;
-                const projectile = document.getElementById('projectile').value;
-                const target = document.getElementById('target').value;
-                const fileName = `${projectile}_${target}_inelastic.in`;
-                
-                const blob = new Blob([outputText], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                
-                // Clean up
-                setTimeout(function() {
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                }, 0);
-            }
             
             // Add first target excited state by default
             if (targetStateCount === 1) {
