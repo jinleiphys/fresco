@@ -23,18 +23,19 @@ The application consists of reaction-type-specific HTML pages that share common 
 - `breakup.html` - Breakup/CDCC calculations
 
 **Shared JavaScript Modules (`assets/js/`):**
-- `fresco-namelist.js` - Complete definition of all 84 FRESCO namelist parameters with metadata (tooltips, defaults, types, validation)
+- `fresco-namelist.js` - Complete definition of 92 parameters (84 FRESCO + 7 CDCC-specific + 1 alias) with metadata (tooltips, defaults, types, validation)
 - `fresco-parameter-manager.js` - Dynamic parameter categorization system (object, not a constructor)
 - `fresco-parameter-ui.js` - Shared UI for parameter management and smart parameter collection
 - `fresco-partition-states.js` - Shared helper for &PARTITION and &STATES namelist generation
-- `fresco-potential.js` - **NEW** Comprehensive potential management (all 22 FRESCO potential TYPEs and SHAPEs)
-- `fresco-potential-ui.js` - **NEW** Dynamic potential card UI generation and management
+- `fresco-potential.js` - Comprehensive potential management (all 22 FRESCO potential TYPEs and SHAPEs)
+- `fresco-potential-ui.js` - Dynamic potential card UI generation and management
 - `fresco-common.js` - File parsing, form population utilities, and theme management
 - `fresco-integration.js` - UI integration and event handling
 - `fresco-shared-components.js` - Shared HTML components (footer, theme toggle, home link) dynamically injected into all pages
 - `fresco-generator.js` - Shared input file generation functions (copy to clipboard, download file, button initialization)
+- `fresco-breakup.js` - **CDCC-specific** JavaScript for breakup.html (file upload, J-intervals, bins, input generation)
 
-All HTML files load these ten JavaScript files in order. Each page defines its own reaction-specific `window.generateInputFile()` function, while `fresco-generator.js` provides shared `copyToClipboard()` and `downloadInputFile()` functions that work across all pages.
+Most HTML files load the first ten JavaScript files. `breakup.html` additionally loads `fresco-breakup.js` which contains all CDCC-specific logic in a separate 767-line module to keep the HTML clean (reduced from 1607 to 1041 lines).
 
 ### Dynamic Parameter System
 
@@ -172,6 +173,100 @@ const potentialSection = window.FrescoPotentialUI.generatePotentialSection();
 - All parameters are validated (no NaN or Infinity values)
 - Parsing preserves all parameters including special ones (jl, lshape, xlvary, alvary, datafile)
 - See `POTENTIAL_SYSTEM_README.md` for comprehensive documentation
+
+### CDCC/Breakup-Specific Features
+
+The `breakup.html` page implements CDCC (Continuum-Discretized Coupled-Channels) calculations with specialized functionality handled by `fresco-breakup.js`.
+
+**Key Differences from Other Reaction Types:**
+- Uses `&CDCC` namelist instead of `&FRESCO` namelist
+- Requires `&NUCLEUS`, `&BIN`, and `&POTENTIAL` namelists with different structures
+- Has CDCC-specific parameter aliases (cdccc, q, ncoul, reor, qc, la, iscgs, ipcgs)
+- Includes 7 additional CDCC-specific parameters in `fresco-namelist.js`
+
+**CDCC-Specific Parameters (17 essential for General section):**
+```javascript
+// Integration and matching
+'hcm', 'rmatch', 'rasym', 'hktarg'
+
+// Accuracy and convergence
+'accrcy', 'absend'
+
+// Angular distribution
+'thmin', 'thmax', 'thinc'
+
+// Energy
+'elab'
+
+// Output control
+'smats', 'chans', 'xstabl'
+
+// Cutoffs
+'cutr'
+
+// CDCC-specific
+'nk', 'cdcc'
+
+// Iteration
+'iter'
+```
+
+**CDCC Parameter Aliases:**
+The `&CDCC` namelist uses different names for some parameters compared to `&FRESCO`:
+- `cdccc` (CDCC) ← `cdcc` (FRESCO)
+- `q` ← `ip1` (projectile single-particle couplings)
+- `ncoul` ← `ip2` (nuclear/Coulomb selection)
+- `reor` ← `ip3` (diagonal/off-diagonal couplings)
+- `qc` ← `ip4` (Qmax for deformed core potential multipoles)
+- `la` ← `ip5` (Lmax for multipole orders)
+- `iscgs` ← `isc` (ground state overlap)
+- `ipcgs` ← `ipc` (ground state overlap)
+
+**Dynamic J-Value Intervals:**
+The Angular Momentum Settings section allows users to dynamically add/remove J-interval definitions:
+- Default: 4 intervals (0→4, 60→5, 200→20, 2500→0)
+- Users can add unlimited custom intervals via "Add J-Interval" button
+- Each interval can be removed individually
+- Generates `jbord` and `jump` arrays for &CDCC namelist
+
+**CDCC File Upload Handler:**
+`fresco-breakup.js` includes a specialized file upload handler (`handleCDCCFileUpload`) that:
+1. Parses `&CDCC` namelist with alias mapping
+2. Parses `&NUCLEUS` namelists (Projectile, Core, Valence, Target)
+3. Parses `&BIN` namelists and dynamically creates bin cards
+4. Populates all form fields including nucleus properties and potentials
+5. Updates parameter manager to promote file parameters to General section
+6. Handles empty &BIN / terminators correctly
+
+**CDCC Potential Parameters:**
+All 5 potential sections include complete parameter sets:
+- **Projectile-Target** (Coulomb): a1, a2, rc
+- **Core-Target**: a1, a2, rc, V, vr0, a, W, wr0, aw
+- **Valence-Target**: a1, a2, rc, V, vr0, a, W, wr0, aw
+- **Core-Valence Ground State**: a1, a2, rc, v, vr0, a, vso, rso0, aso
+- **Core-Valence Excited States**: a1, a2, rc, v, vr0, a, vso, rso0, aso
+
+**fresco-breakup.js Module Structure:**
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. CDCC parameter configuration (17 essential params)
+    // 2. Parameter management functions (updateParameterDisplay, etc.)
+    // 3. Initialization (parameter UI, parameter manager, chevron toggle)
+    // 4. Bins management (add/remove continuum bins)
+    // 5. J-intervals management (add/remove J-intervals)
+    // 6. CDCC file upload handler (parseCDCCFile, parseNucleusNamelists, parseBinNamelists)
+    // 7. CDCC namelist generation (generateCdccNamelist with alias mapping)
+    // 8. Input file generation (window.generateInputFile)
+    // 9. Default initialization (3 bins, 4 J-intervals)
+});
+```
+
+**Important Implementation Details:**
+- All code wrapped in DOMContentLoaded to ensure DOM is ready
+- Functions defined before use to avoid hoisting issues
+- Null checks on all DOM element access to prevent errors
+- Duplicate function definitions removed for clean code organization
+- File reduced from 1607 lines (HTML+JS embedded) to 1041 lines (HTML only) + 767 lines (fresco-breakup.js)
 
 ### FRESCO Namelist Structure
 
@@ -390,8 +485,8 @@ Each HTML page defines its own `window.generateInputFile()` function with reacti
    - Validation happens in three places: parameter collection, namelist generation, and file parsing
    - Use `window.getAllFrescoParameters()` to ensure proper validation
 
-4. **Script Load Order**: The ten JavaScript files must be loaded in this exact order:
-   - `fresco-namelist.js` (defines parameters)
+4. **Script Load Order**: The JavaScript files must be loaded in this exact order:
+   - `fresco-namelist.js` (defines 92 parameters including CDCC-specific)
    - `fresco-parameter-manager.js` (categorization logic - note: it's an object, NOT a constructor)
    - `fresco-parameter-ui.js` (parameter UI and smart collection)
    - `fresco-common.js` (parsing utilities and theme management)
@@ -401,6 +496,7 @@ Each HTML page defines its own `window.generateInputFile()` function with reacti
    - `fresco-potential.js` (potential definitions, parsing, generation)
    - `fresco-potential-ui.js` (potential card UI management)
    - `fresco-shared-components.js` (shared HTML components injection)
+   - `fresco-breakup.js` (**breakup.html only** - CDCC-specific logic loaded via DOMContentLoaded)
 
 5. **Namelist Format**: FRESCO is strict about namelist format. Always use `parameter=value` (no spaces around `=`) and terminate with `/` on a new line.
 

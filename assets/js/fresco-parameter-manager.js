@@ -33,20 +33,31 @@ window.FrescoParameterManager = {
     resetToDefaultCategorization: function() {
         console.log('Resetting to default parameter categorization');
         this.inputFileParameters.clear();
-        
+
         // Get all parameters from FrescoNamelist
         const allParams = window.FrescoNamelist ? window.FrescoNamelist.getAllParameters() : {};
         const allParamNames = Object.keys(allParams);
-        
-        // Set default General parameters
-        this.currentCategorization.general = [...this.defaultGeneralParams];
-        
+
+        // Set default General parameters (only those that exist in FrescoNamelist)
+        this.currentCategorization.general = this.defaultGeneralParams.filter(
+            param => allParamNames.includes(param)
+        );
+
         // Set Advanced parameters (all others)
         this.currentCategorization.advanced = allParamNames.filter(
             param => !this.defaultGeneralParams.includes(param)
         );
-        
+
+        // Check for parameters in defaultGeneralParams that don't exist in FrescoNamelist
+        const missingParams = this.defaultGeneralParams.filter(
+            param => !allParamNames.includes(param)
+        );
+        if (missingParams.length > 0) {
+            console.warn('Parameters in defaultGeneralParams not found in FrescoNamelist:', missingParams);
+        }
+
         console.log('Default categorization:', this.currentCategorization);
+        console.log(`General: ${this.currentCategorization.general.length}, Advanced: ${this.currentCategorization.advanced.length}, Total: ${allParamNames.length}`);
     },
     
     /**

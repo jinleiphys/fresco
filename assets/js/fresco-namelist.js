@@ -749,6 +749,80 @@ window.FrescoNamelist = {
                     placeholder: "/tmp/ or ."
                 }
             }
+        },
+        cdccSpecific: {
+            title: "CDCC-Specific Parameters",
+            description: "Parameters specific to CDCC (Continuum-Discretized Coupled-Channels) calculations",
+            parameters: {
+                nk: {
+                    label: "Integration points (nk)",
+                    tooltip: "Number of integration points for continuum bins in CDCC calculations. Typical: 30-50",
+                    type: "number",
+                    default: 50,
+                    step: 1,
+                    min: 1
+                },
+                hktarg: {
+                    label: "Target h×k value (hktarg)",
+                    tooltip: "Target value for h×k, where h is the step size and k is the wave number. Used when hcm=0. Typical value: 0.2",
+                    type: "number",
+                    default: 0.2,
+                    step: 0.01,
+                    min: 0.01
+                },
+                hat: {
+                    label: "Mean bin energies (hat)",
+                    tooltip: "Use mean bin energies (T) or midpoint energies (F). Default: T",
+                    type: "select",
+                    default: true,
+                    options: [
+                        { value: true, text: "T - Use mean bin energies" },
+                        { value: false, text: "F - Use midpoint energies" }
+                    ]
+                },
+                quasi: {
+                    label: "Quasi energy (quasi)",
+                    tooltip: "If assigned, set all channel energies as if for this projectile energy (e.g., -be for adiabatic)",
+                    type: "number",
+                    default: null,
+                    step: 0.001
+                },
+                sumform: {
+                    label: "Bin formfactor reduction (sumform)",
+                    tooltip: "0=no reduction, 1=KQl summed into L, 2=summed into composite state. Default: 2 if kind=3 bins, else 0",
+                    type: "select",
+                    default: null,
+                    options: [
+                        { value: 0, text: "0 - No formfactor reduction" },
+                        { value: 1, text: "1 - KQl formfactors summed into new multipole L" },
+                        { value: 2, text: "2 - Formfactors summed into composite projectile state" }
+                    ]
+                },
+                la: {
+                    label: "Lmax (la, alias for ip5)",
+                    tooltip: "Maximum order for new multipole (alias for ip5). Used with qc for individual multipole control.",
+                    type: "number",
+                    default: null,
+                    step: 1,
+                    min: 0
+                },
+                iscgs: {
+                    label: "Ground state isc (iscgs)",
+                    tooltip: "isc value (&overlap) for the projectile ground state wave function",
+                    type: "number",
+                    default: null,
+                    step: 1,
+                    min: 0
+                },
+                ipcgs: {
+                    label: "Ground state ipc (ipcgs)",
+                    tooltip: "ipc value (&overlap) for the projectile ground state wave function",
+                    type: "number",
+                    default: null,
+                    step: 1,
+                    min: 0
+                }
+            }
         }
     },
 
