@@ -21,6 +21,7 @@
     <script src="assets/js/fresco-common.js"></script>
     <script src="assets/js/fresco-integration.js"></script>
     <script src="assets/js/fresco-generator.js"></script>
+    <script src="assets/js/fresco-partition-states.js"></script>
     <script src="assets/js/fresco-shared-components.js"></script>
 </head>
 <body>
@@ -1587,62 +1588,37 @@
                     });
                 }
 
-                // Collect additional parameters from parameter manager
-                if (parameterManager) {
-                    const allParameters = parameterManager.getAllParameters();
-                    Object.keys(allParameters).forEach(paramName => {
-                        const param = allParameters[paramName];
-                        if (param.value !== undefined && param.value !== null && param.value !== '') {
-                            // Convert to appropriate type
-                            if (typeof param.defaultValue === 'number') {
-                                formData[paramName] = parseFloat(param.value);
-                            } else if (typeof param.defaultValue === 'boolean') {
-                                formData[paramName] = param.value === 'true' || param.value === true;
-                            } else {
-                                formData[paramName] = param.value;
-                            }
-                        }
-                    });
-                }
-                
-                // Include parsed parameters from uploaded files
-                if (window.parsedFrescoParameters) {
-                    Object.keys(window.parsedFrescoParameters).forEach(param => {
-                        let value = window.parsedFrescoParameters[param];
-                        
-                        // Special handling for elab - always use parsed value if it contains multiple energies
-                        if (param === 'elab' && typeof value === 'string' && value.includes(',')) {
-                            formData[param] = value;
-                            console.log(`Overriding elab with parsed values: ${value}`);
-                        } else if (!formData.hasOwnProperty(param)) {
-                            // Only add if not already in formData (form fields take precedence)
-                            // Try to parse as number if it looks like a number
-                            if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
-                                value = parseFloat(value);
-                            }
-                            formData[param] = value;
-                            console.log(`Including parsed parameter: ${param} = ${value}`);
-                        }
-                    });
-                }
+                // Collect all FRESCO namelist parameters using shared function
+                // This automatically collects from:
+                // - General FRESCO Parameters section (default + dynamically added)
+                // - Advanced parameter sections (if open)
+                // - Uploaded input file parameters
+                const allFrescoParams = window.getAllFrescoParameters();
+                Object.assign(formData, allFrescoParams);
                 
                 // Generate namelist using the configuration
                 const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
-                
+
+                // Generate &PARTITION and &STATES namelists for transfer reaction (2 partitions)
+                const partitionStatesSection = window.FrescoPartitionStates.generateTwoPartitions(
+                    {
+                        namep: projInitial, massp: projMassInitial, zp: projZInitial, jp: projSpinInitial,
+                        namet: targInitial, masst: targMassInitial, zt: targZInitial, jt: targSpinInitial,
+                        nex: 1, qval: 0, pwf: true
+                    },
+                    {
+                        namep: projFinal, massp: projMassFinal, zp: projZFinal, jp: projSpinFinal,
+                        namet: targFinal, masst: targMassFinal, zt: targZFinal, jt: targSpinFinal,
+                        nex: 1, qval: qval, pwf: true
+                    }
+                );
+
                 // Build the input file content
                 let inputContent = `${header}
 NAMELIST
 ${namelistSection}
 
- &PARTITION namep='${projInitial}' massp=${projMassInitial} zp=${projZInitial} 
- 	    namet='${targInitial}' masst=${targMassInitial} zt=${targZInitial} nex=1 qval=0.0 pwf=T /
- &STATES jp=${projSpinInitial} copyp=0 bandp=1 ep=0.0000 kkp=0 tp=0 cpot=1 jt=${targSpinInitial} copyt=0 bandt=1 et=0.0000 kkt=0 tt=0 /
-
- &PARTITION namep='${projFinal}' massp=${projMassFinal} zp=${projZFinal} 
- 	    namet='${targFinal}' masst=${targMassFinal} zt=${targZFinal} qval=${qval} nex=1 pwf=T /
- &STATES jp=${projSpinFinal} copyp=0 bandp=1 ep=0.0000 kkp=0 tp=0 cpot=2 jt=${targSpinFinal} copyt=0 bandt=1 et=0.0000 kkt=0 tt=0 /
- &partition /
-
+${partitionStatesSection}
  &POT kp=1 ap=${projMassInitial} at=${targMassInitial} rc=${rcInitial}  /
  &POT kp=1 type=1 p1=${vInitial} p2=${rvInitial} p3=${avInitial} p4=${wInitial} p5=${rwInitial} p6=${awInitial}  /
  &POT kp=1 type=3 p1=${vsoInitial} p2=${rsoInitial} p3=${asoInitial}  /

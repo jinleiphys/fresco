@@ -523,7 +523,72 @@ function populateFormFields(namelists, formType, content) {
             }
             return;
         }
-        
+
+        // Handle partition and states namelists specially
+        if (namelistName === 'partition' || namelistName.startsWith('partition')) {
+            console.log(`Partition namelist detected: ${namelistName} - storing data and populating basic fields`);
+
+            // Store full partition data for later use
+            if (!window.parsedPartitionStatesData) {
+                window.parsedPartitionStatesData = { partitions: [], states: [] };
+            }
+            window.parsedPartitionStatesData.partitions.push(namelist);
+
+            // Only populate fields that exist (no error logging for missing fields)
+            const partitionFieldMappings = {
+                'namep': 'projectile',
+                'massp': 'proj-mass',
+                'zp': 'proj-z',
+                'namet': 'target',
+                'masst': 'targ-mass',
+                'zt': 'targ-z'
+            };
+
+            Object.keys(partitionFieldMappings).forEach(param => {
+                if (namelist.hasOwnProperty(param)) {
+                    const fieldId = partitionFieldMappings[param];
+                    const element = document.getElementById(fieldId);
+                    if (element) {
+                        console.log(`  ✅ Partition: ${param} → ${fieldId} = ${namelist[param]}`);
+                        element.value = namelist[param];
+                        element.dispatchEvent(new Event('change'));
+                        fieldsPopulated++;
+                    }
+                }
+            });
+            return;
+        }
+
+        if (namelistName === 'states' || namelistName.startsWith('states')) {
+            console.log(`States namelist detected: ${namelistName} - storing data and populating basic fields`);
+
+            // Store full states data for later use
+            if (!window.parsedPartitionStatesData) {
+                window.parsedPartitionStatesData = { partitions: [], states: [] };
+            }
+            window.parsedPartitionStatesData.states.push(namelist);
+
+            // Only populate fields that exist (no error logging for missing fields)
+            const statesFieldMappings = {
+                'jp': 'proj-spin',
+                'jt': 'targ-spin'
+            };
+
+            Object.keys(statesFieldMappings).forEach(param => {
+                if (namelist.hasOwnProperty(param)) {
+                    const fieldId = statesFieldMappings[param];
+                    const element = document.getElementById(fieldId);
+                    if (element) {
+                        console.log(`  ✅ States: ${param} → ${fieldId} = ${namelist[param]}`);
+                        element.value = namelist[param];
+                        element.dispatchEvent(new Event('change'));
+                        fieldsPopulated++;
+                    }
+                }
+            });
+            return;
+        }
+
         Object.keys(namelist).forEach(param => {
             let paramLower = param.toLowerCase();
             let value = namelist[param];
@@ -642,7 +707,8 @@ function populateFormFields(namelists, formType, content) {
             const paramMapping = {
                 'type': '.potential-type',
                 'shape': '.potential-shape',
-                'kp': '.kp-field',  // This field might not exist, keep for compatibility
+                'it': '.it-field',
+                // Note: 'kp' is a partition-level parameter, not a potential card field
                 'p': '.p1',  // Map p array to p1 for now
                 'p1': '.p1',
                 'p2': '.p2',
@@ -652,6 +718,12 @@ function populateFormFields(namelists, formType, content) {
                 'p6': '.p6',
                 'p7': '.p7'
             };
+
+            // Skip partition-level parameters that don't belong in potential cards
+            const skipParams = ['kp', 'kt', 'ap', 'at', 'rc'];
+            if (skipParams.includes(param.toLowerCase())) {
+                return; // Silently skip these parameters
+            }
             
             // Special handling for 'p' array parameter
             if (param.toLowerCase() === 'p' && Array.isArray(value)) {

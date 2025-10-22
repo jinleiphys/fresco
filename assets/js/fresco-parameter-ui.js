@@ -388,7 +388,8 @@ window.FrescoParameterUI = {
                     } else if (element.type === 'number') {
                         // Parse single numeric values
                         const parsed = parseFloat(value);
-                        if (!isNaN(parsed)) {
+                        // Skip if parsed value is NaN or Infinity
+                        if (!isNaN(parsed) && isFinite(parsed)) {
                             formData[id] = parsed;
                         }
                     } else if (element.type === 'checkbox') {
@@ -412,7 +413,8 @@ window.FrescoParameterUI = {
                     // Parse value based on type
                     if (element.type === 'number') {
                         const parsed = parseFloat(value);
-                        if (!isNaN(parsed)) {
+                        // Skip if parsed value is NaN or Infinity
+                        if (!isNaN(parsed) && isFinite(parsed)) {
                             formData[id] = parsed;
                         }
                     } else if (element.type === 'checkbox') {
@@ -439,8 +441,12 @@ window.FrescoParameterUI = {
                     let value = param.currentValue;
                     if (param.type === 'number' && typeof value === 'string') {
                         value = parseFloat(value);
+                        // Skip if parsed value is NaN or Infinity
+                        if (isNaN(value) || !isFinite(value)) return;
                     } else if (param.type === 'integer' && typeof value === 'string') {
                         value = parseInt(value);
+                        // Skip if parsed value is NaN or Infinity
+                        if (isNaN(value) || !isFinite(value)) return;
                     } else if (param.type === 'boolean') {
                         value = value === true || value === 'true' || value === 'T' || value === '1';
                     }
@@ -455,8 +461,12 @@ window.FrescoParameterUI = {
                         let value = param.currentValue;
                         if (param.type === 'number' && typeof value === 'string') {
                             value = parseFloat(value);
+                            // Skip if parsed value is NaN or Infinity
+                            if (isNaN(value) || !isFinite(value)) return;
                         } else if (param.type === 'integer' && typeof value === 'string') {
                             value = parseInt(value);
+                            // Skip if parsed value is NaN or Infinity
+                            if (isNaN(value) || !isFinite(value)) return;
                         } else if (param.type === 'boolean') {
                             value = value === true || value === 'true' || value === 'T' || value === '1';
                         }
@@ -478,7 +488,10 @@ window.FrescoParameterUI = {
                     } else if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
                         // Parse single numeric values
                         value = parseFloat(value);
-                        formData[param] = value;
+                        // Only add if value is valid (not NaN or Infinity)
+                        if (!isNaN(value) && isFinite(value)) {
+                            formData[param] = value;
+                        }
                     } else {
                         // Keep as-is for other cases (strings, multi-values, etc.)
                         formData[param] = value;

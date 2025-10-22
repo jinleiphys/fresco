@@ -831,9 +831,10 @@ window.FrescoNamelist = {
             const value = formData[paramName];
             const defaultValue = paramConfig.default;
             const isBasicParam = basicParams.includes(paramName);
-            
-            // Skip if value is null, undefined, or empty string
+
+            // Skip if value is null, undefined, empty string, NaN, or Infinity
             if (value === null || value === undefined || value === '') continue;
+            if (typeof value === 'number' && (isNaN(value) || !isFinite(value))) continue;
             
             // For basic parameters from General section: include if non-empty (even if equals default)
             // For advanced parameters: only include if different from default (unless required)

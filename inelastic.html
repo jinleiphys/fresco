@@ -21,6 +21,7 @@
     <script src="assets/js/fresco-common.js"></script>
     <script src="assets/js/fresco-integration.js"></script>
     <script src="assets/js/fresco-generator.js"></script>
+    <script src="assets/js/fresco-partition-states.js"></script>
     <script src="assets/js/fresco-shared-components.js"></script>
 </head>
 <body>
@@ -1490,83 +1491,66 @@
                     });
                 }
 
-                // Collect additional namelist parameters from parameter manager
-                if (parameterManager) {
-                    const allParameters = parameterManager.getAllParameters();
-                    Object.keys(allParameters).forEach(paramName => {
-                        const param = allParameters[paramName];
-                        if (param.currentValue !== null && param.currentValue !== undefined && param.currentValue !== '') {
-                            if (param.type === 'number' || param.type === 'float') {
-                                formData[paramName] = parseFloat(param.currentValue);
-                            } else if (param.type === 'integer') {
-                                formData[paramName] = parseInt(param.currentValue);
-                            } else if (param.type === 'boolean') {
-                                formData[paramName] = param.currentValue === 'true' || param.currentValue === true;
-                            } else {
-                                formData[paramName] = param.currentValue;
-                            }
-                        }
-                    });
-                }
-                
-                // Include parsed parameters from uploaded files
-                if (window.parsedFrescoParameters) {
-                    Object.keys(window.parsedFrescoParameters).forEach(param => {
-                        let value = window.parsedFrescoParameters[param];
-                        
-                        // Special handling for elab - always use parsed value if it contains multiple energies
-                        if (param === 'elab' && typeof value === 'string' && value.includes(',')) {
-                            formData[param] = value;
-                            console.log(`Overriding elab with parsed values: ${value}`);
-                        } else if (!formData.hasOwnProperty(param)) {
-                            // Only add if not already in formData (form fields take precedence)
-                            // Try to parse as number if it looks like a number
-                            if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
-                                value = parseFloat(value);
-                            }
-                            formData[param] = value;
-                            console.log(`Including parsed parameter: ${param} = ${value}`);
-                        }
-                    });
-                }
+                // Collect all FRESCO namelist parameters using shared function
+                // This automatically collects from:
+                // - General FRESCO Parameters section (default + dynamically added)
+                // - Advanced parameter sections (if open)
+                // - Uploaded input file parameters
+                const allFrescoParams = window.getAllFrescoParameters();
+                Object.assign(formData, allFrescoParams);
                 
                 // Generate namelist using the configuration
                 const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
-                
+
+                // Collect all target excited states
+                const targStateSpins = document.querySelectorAll('.targ-state-spin');
+                const targStateParities = document.querySelectorAll('.targ-state-parity');
+                const targStateEnergies = document.querySelectorAll('.targ-state-energy');
+
+                const nex = targStateSpins.length;
+
+                // Create states array for inelastic scattering
+                const states = [];
+                for (let i = 0; i < targStateSpins.length; i++) {
+                    const spin = parseFloat(targStateSpins[i].value);
+                    const parity = parseInt(targStateParities[i].value);
+                    const energy = parseFloat(targStateEnergies[i].value);
+                    const band = parity > 0 ? 1 : -1;
+
+                    states.push({
+                        jp: 0,  // projectile spin (alpha has 0)
+                        copyp: i === 0 ? 0 : 1,  // first state is original, others are copies
+                        bandp: 1,
+                        ep: 0.0,
+                        jt: spin,
+                        copyt: 0,
+                        bandt: band,
+                        et: energy
+                    });
+                }
+
+                // Generate &PARTITION and &STATES namelists for inelastic scattering
+                const partitionStatesSection = window.FrescoPartitionStates.generateFromData([{
+                    namep: projectile,
+                    massp: projMass,
+                    zp: projZ,
+                    jp: 0,  // projectile spin
+                    namet: target,
+                    masst: targMass,
+                    zt: targZ,
+                    jt: parseFloat(targStateSpins[0].value),  // ground state spin
+                    nex: nex,
+                    qval: 0,
+                    pwf: true,
+                    states: states
+                }]);
+
                 // Build the input file content
                 let inputContent = `${header}
 NAMELIST
 ${namelistSection}
 
- &PARTITION namep='${projectile}' massp=${projMass} zp=${projZ} 
- 	    namet='${target}' masst=${targMass} zt=${targZ} qval=0.0 nex=${targExcited} pwf=T /`;
-
-                // Get target excited states
-                const targStateSpins = document.querySelectorAll('.targ-state-spin');
-                const targStateParities = document.querySelectorAll('.targ-state-parity');
-                const targStateEnergies = document.querySelectorAll('.targ-state-energy');
-                
-                // Add ground state
-                const groundStateSpin = targStateSpins[0].value;
-                const groundStateParity = targStateParities[0].value > 0 ? '+' : '-';
-                const groundStateEnergy = targStateEnergies[0].value;
-                
-                inputContent += `
- &STATES jp=0.0 copyp=0 bandp=1 ep=0.0000 kkp=0 tp=0 cpot=1 jt=${groundStateSpin} copyt=0 bandt=${groundStateParity}1 et=${groundStateEnergy} kkt=0 tt=0 /`;
-                
-                // Add excited states
-                for (let i = 1; i < targStateSpins.length; i++) {
-                    const spin = targStateSpins[i].value;
-                    const parity = targStateParities[i].value > 0 ? '+' : '-';
-                    const energy = targStateEnergies[i].value;
-                    
-                    inputContent += `
- &STATES jp=0.0 copyp=1 bandp=1 ep=0.0000 kkp=0 tp=0 cpot=1 jt=${spin} copyt=0 bandt=${parity}1 et=${energy} kkt=0 tt=0 /`;
-                }
-                
-                inputContent += `
- &partition /
- 
+${partitionStatesSection}
  &POT kp=1 ap=${ap} at=${at} rc=${rc}  /`;
 
                 // Add nuclear potentials

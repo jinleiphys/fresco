@@ -21,6 +21,7 @@
     <script src="assets/js/fresco-common.js"></script>
     <script src="assets/js/fresco-integration.js"></script>
     <script src="assets/js/fresco-generator.js"></script>
+    <script src="assets/js/fresco-partition-states.js"></script>
     <script src="assets/js/fresco-shared-components.js"></script>
 </head>
 <body>
@@ -791,17 +792,20 @@
 
                 // Generate namelist using the configuration
                 const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
-                
+
+                // Generate &PARTITION and &STATES namelists using the existing form data
+                const partitionStatesSection = window.FrescoPartitionStates.generateSingle(
+                    projectile, projMass, projZ, projSpin,
+                    target, targMass, targZ, targSpin,
+                    0 // qval
+                );
+
                 // Build the input file content
                 let inputContent = `${header}
 NAMELIST
 ${namelistSection}
 
- &PARTITION namep='${projectile}' massp=${projMass} zp=${projZ} 
- 	    namet='${target}' masst=${targMass} zt=${targZ} qval=0.0 nex=1  /
- &STATES jp=${projSpin} copyp=0 bandp=1 ep=0.0000 kk=0 tp=0 cpot=1 jt=${targSpin} copyt=0 bandt=1 et=0.0000 kkt=0 tt=0  /
- &partition /
- 
+${partitionStatesSection}
  &POT kp=1 ap=${ap} at=${at} rc=${rc}  /`;
 
                 // Add nuclear potentials
