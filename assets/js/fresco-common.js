@@ -397,7 +397,23 @@ function parseParametersFromLine(line, namelistObj) {
 function populateFormFields(namelists, formType, content) {
     console.log('Populating form fields for type:', formType);
     console.log('Parsed namelists:', namelists);
-    
+
+    // Clear existing nuclear potential cards to avoid duplicates
+    const potentialContainer = document.getElementById('potential-container');
+    if (potentialContainer) {
+        // Count how many nuclear potentials are in the uploaded file
+        const nuclearPotCount = Object.keys(namelists).filter(name => {
+            if (!name.startsWith('pot') || name === 'pot') return false;
+            const namelist = namelists[name];
+            return namelist.hasOwnProperty('type') || namelist.hasOwnProperty('p1') || namelist.hasOwnProperty('p');
+        }).length;
+
+        if (nuclearPotCount > 0) {
+            console.log(`Found ${nuclearPotCount} nuclear potentials in file, clearing existing potential cards`);
+            potentialContainer.innerHTML = '';
+        }
+    }
+
     // Use FrescoNamelist configuration if available
     let useAdvancedConfig = false;
     if (typeof window.FrescoNamelist !== 'undefined') {
