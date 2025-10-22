@@ -1125,10 +1125,10 @@
             // Add bin button listener
             addBinBtn.addEventListener('click', function() {
                 addBin();
-            });        })(); // End IIFE
-        
-        // Parameter management functions
-        function updateParameterDisplay() {
+            });
+
+            // Parameter management functions
+            function updateParameterDisplay() {
             if (!parameterManager) return;
             
             const allocation = parameterManager.getCurrentCategorization();
@@ -1371,15 +1371,13 @@ CDCC
                 document.getElementById('output').textContent = inputContent;
             }
             
-            // Copy to clipboard function
             
-            // Download input file function
             
             // Add default bins
             addBin(); // First bin: positive parity, l=0, j=0.5
             addBin(); // Second bin: negative parity, l=1, j=0.5
             addBin(); // Third bin: negative parity, l=1, j=1.5
-        });
+        })(); // End IIFE - script runs immediately since it's at bottom of page
     </script>
 </body>
 </html>

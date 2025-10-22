@@ -1683,14 +1683,9 @@ ${namelistSection}
                 // Update output area
                 document.getElementById('output').textContent = inputContent;
             }
-            
-            // Copy to clipboard function
-            
-            // Download input file function
-        })(); // End IIFE
-        
-        // Parameter management functions
-        function updateParameterDisplay() {
+
+            // Parameter management functions
+            function updateParameterDisplay() {
             if (!parameterManager) return;
             
             const allocation = parameterManager.getCurrentCategorization();
@@ -1772,6 +1767,7 @@ ${namelistSection}
             console.log('Current Parameter State:', allocation);
             alert(`Current State:\n\nGeneral: ${allocation.general.length} parameters\nAdvanced: ${allocation.advanced.length} parameters\n\nSee console for detailed information.`);
         }
+        })(); // End IIFE - script runs immediately since it's at bottom of page
     </script>
 </body>
 </html>

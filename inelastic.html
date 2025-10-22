@@ -1120,10 +1120,9 @@
             if (window.FrescoNamelist && window.FrescoNamelist.initializeBasicFields) {
                 window.FrescoNamelist.initializeBasicFields();
             }
-        })(); // End IIFE
-        
-        // Parameter management functions
-        function updateParameterDisplay() {
+
+            // Parameter management functions
+            function updateParameterDisplay() {
             if (!parameterManager) return;
             
             const allocation = parameterManager.getCurrentCategorization();
@@ -1730,9 +1729,7 @@ ${potLine}`;
                 document.getElementById('output').textContent = inputContent;
             }
             
-            // Copy to clipboard function
             
-            // Download input file function
             
             // Add first target excited state by default
             if (targetStateCount === 1) {
@@ -1741,7 +1738,7 @@ ${potLine}`;
             
             // Update iblock initially
             updateIblockValue();
-        });
+        })(); // End IIFE - script runs immediately since it's at bottom of page
     </script>
 </body>
 </html>

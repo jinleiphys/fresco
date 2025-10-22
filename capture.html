@@ -1065,7 +1065,7 @@
             
             // Use parameter manager to get all parameters
             if (parameterManager) {
-                const allParameters = parameterManager.getAllParameters();
+                const allParameters = parameterManager.getAllParameterValues();
                 Object.assign(formData, allParameters);
             }
             
@@ -1117,9 +1117,7 @@ ${namelistSection}
             document.getElementById('output').textContent = inputContent;
         }
         
-        // Copy to clipboard function
         
-        // Download input file function
     </script>
 </body>
 </html>
