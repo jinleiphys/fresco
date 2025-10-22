@@ -1177,11 +1177,12 @@
     <script>
         let parameterManager;
         
-        document.addEventListener('DOMContentLoaded', function() {
+        (function() {
             // Check if FrescoNamelist is available
             // Initialize the parameter manager
             if (typeof FrescoParameterManager !== 'undefined') {
-                parameterManager = new FrescoParameterManager();
+                parameterManager = window.FrescoParameterManager;
+                parameterManager.init();
                 updateParameterDisplay();
                 console.log('Parameter manager initialized for transfer reaction');
             } else {
@@ -1742,7 +1743,7 @@ ${namelistSection}
                     window.URL.revokeObjectURL(url);
                 }, 0);
             }
-        });
+        })(); // End IIFE
         
         // Parameter management functions
         function updateParameterDisplay() {

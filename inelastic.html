@@ -1101,10 +1101,11 @@
         // Initialize parameter manager
         let parameterManager;
         
-        document.addEventListener('DOMContentLoaded', function() {
+        (function() {
             // Initialize the parameter manager
             if (typeof FrescoParameterManager !== 'undefined') {
-                parameterManager = new FrescoParameterManager();
+                parameterManager = window.FrescoParameterManager;
+                parameterManager.init();
                 updateParameterDisplay();
                 console.log('Parameter manager initialized for inelastic scattering');
             } else {
@@ -1118,7 +1119,7 @@
             if (window.FrescoNamelist && window.FrescoNamelist.initializeBasicFields) {
                 window.FrescoNamelist.initializeBasicFields();
             }
-        });
+        })(); // End IIFE
         
         // Parameter management functions
         function updateParameterDisplay() {

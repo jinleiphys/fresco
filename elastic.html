@@ -693,18 +693,20 @@
             alert(`Current State:\n\nGeneral: ${allocation.general.count} parameters\nAdvanced: ${allocation.advanced.count} parameters\n\nSee console for detailed information.`);
         };
         
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize immediately since script is at bottom of page
+        (function() {
             // Initialize the parameter manager
-            if (typeof FrescoParameterManager !== 'undefined') {
-                parameterManager = new FrescoParameterManager();
+            if (typeof window.FrescoParameterManager !== 'undefined') {
+                parameterManager = window.FrescoParameterManager;
+                parameterManager.init();
                 updateParameterDisplay();
                 console.log('Parameter manager initialized for elastic scattering');
             } else {
                 console.error('FrescoParameterManager not available');
             }
-            
+
             // Check if FrescoNamelist is available for backward compatibility
-            console.log('DOM loaded, checking FrescoNamelist:', typeof window.FrescoNamelist);
+            console.log('Checking FrescoNamelist:', typeof window.FrescoNamelist);
             
             // Initialize basic form fields with configuration values
             if (window.FrescoNamelist && window.FrescoNamelist.initializeBasicFields) {
@@ -1033,7 +1035,7 @@ ${potLine}`;
                     window.URL.revokeObjectURL(url);
                 }, 0);
             }
-        });
+        })(); // End IIFE - script runs immediately since it's at bottom of page
     </script>
 </body>
 </html>
