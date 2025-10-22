@@ -223,7 +223,7 @@ window.FrescoGenerator = {
         // Download button
         const downloadBtn = document.getElementById('download-btn');
         if (downloadBtn) {
-            copyBtn.addEventListener('click', () => this.downloadInputFile());
+            downloadBtn.addEventListener('click', () => this.downloadInputFile());
             console.log('Download button initialized');
         }
     }
