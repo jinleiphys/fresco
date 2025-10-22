@@ -17,6 +17,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J60NE88WR1"></script>
     <script src="assets/js/fresco-namelist.js"></script>
     <script src="assets/js/fresco-parameter-manager.js"></script>
+    <script src="assets/js/fresco-parameter-ui.js"></script>
     <script src="assets/js/fresco-common.js"></script>
     <script src="assets/js/fresco-integration.js"></script>
     <script src="assets/js/fresco-generator.js"></script>
@@ -604,115 +605,22 @@
 
     <!-- Custom JavaScript -->
     <script>
-        // Initialize parameter manager
-        let parameterManager;
-        
-        // Parameter management functions (global scope)
-        window.updateParameterDisplay = function() {
-            if (!parameterManager) return;
-            
-            const allocation = parameterManager.getCurrentCategorization();
-            
-            // Update counts
-            document.getElementById('generalCount').textContent = allocation.general.length;
-            document.getElementById('advancedCount').textContent = allocation.advanced.length;
-            
-            // Update parameter lists
-            updateParameterList('generalParameters', allocation.general, 'advanced');
-            updateParameterList('advancedParameters', allocation.advanced, 'general');
-        };
-
-        window.updateParameterList = function(containerId, parameters, moveToSection) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            parameters.forEach(param => {
-                const item = document.createElement('div');
-                item.className = `parameter-item d-flex justify-content-between align-items-center p-2 mb-2 rounded ${param.isFromFile ? 'border-start border-success border-3' : ''}`;
-                item.style.backgroundColor = param.isFromFile ? '#f8fff8' : '#f8f9fa';
-                
-                const leftDiv = document.createElement('div');
-                leftDiv.className = 'd-flex align-items-center';
-                
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'fw-bold';
-                nameSpan.textContent = param.label || param.name;
-                nameSpan.style.color = '#333';
-                
-                const valueSpan = document.createElement('span');
-                valueSpan.className = 'ms-2 text-muted small';
-                if (param.currentValue !== null) {
-                    valueSpan.textContent = `= ${param.currentValue}`;
-                }
-                
-                leftDiv.appendChild(nameSpan);
-                leftDiv.appendChild(valueSpan);
-                
-                const moveBtn = document.createElement('button');
-                moveBtn.className = 'btn btn-sm btn-outline-primary';
-                moveBtn.innerHTML = moveToSection === 'general' ? '<i class="fas fa-arrow-left"></i>' : '<i class="fas fa-arrow-right"></i>';
-                moveBtn.title = `Move to ${moveToSection} section`;
-                moveBtn.onclick = () => moveParameter(param.name, moveToSection === 'general');
-                
-                item.appendChild(leftDiv);
-                item.appendChild(moveBtn);
-                container.appendChild(item);
-            });
-        };
-
-        window.moveParameter = function(paramName, toGeneral) {
-            if (!parameterManager) return;
-            
-            try {
-                parameterManager.moveParameter(paramName, toGeneral);
-                updateParameterDisplay();
-                
-                const section = toGeneral ? 'General' : 'Advanced';
-                console.log(`Parameter '${paramName}' moved to ${section} section`);
-                
-            } catch (error) {
-                console.error('Parameter move error:', error);
-            }
-        };
-
-        window.resetParametersToDefaults = function() {
-            if (!parameterManager) return;
-            
-            if (confirm('Reset all parameters to default allocation?')) {
-                parameterManager.resetToDefaults();
-                updateParameterDisplay();
-                console.log('Parameters reset to default allocation');
-            }
-        };
-
-        window.showParameterState = function() {
-            if (!parameterManager) return;
-            
-            const allocation = parameterManager.getCurrentCategorization();
-            console.log('Current Parameter State:', allocation);
-            alert(`Current State:\n\nGeneral: ${allocation.general.length} parameters\nAdvanced: ${allocation.advanced.length} parameters\n\nSee console for detailed information.`);
-        };
-        
         // Initialize immediately since script is at bottom of page
         (function() {
-            // Initialize the parameter manager
-            if (typeof window.FrescoParameterManager !== 'undefined') {
-                parameterManager = window.FrescoParameterManager;
-                parameterManager.init();
-                updateParameterDisplay();
-                console.log('Parameter manager initialized for elastic scattering');
-            } else {
-                console.error('FrescoParameterManager not available');
-            }
+            // Define default general parameters for elastic scattering
+            const elasticDefaultGeneralParams = [
+                'hcm', 'rmatch', 'jtmax', 'absend',
+                'thmin', 'thmax', 'thinc',
+                'elab', 'iter',
+                'chans', 'smats', 'xstabl'
+            ];
 
-            // Check if FrescoNamelist is available for backward compatibility
-            console.log('Checking FrescoNamelist:', typeof window.FrescoNamelist);
-            
-            // Initialize basic form fields with configuration values
-            if (window.FrescoNamelist && window.FrescoNamelist.initializeBasicFields) {
-                window.FrescoNamelist.initializeBasicFields();
+            // Initialize the parameter UI with elastic-specific defaults
+            if (typeof window.FrescoParameterUI !== 'undefined') {
+                window.FrescoParameterUI.init(elasticDefaultGeneralParams);
+                console.log('Parameter UI initialized for elastic scattering');
+            } else {
+                console.error('FrescoParameterUI not available');
             }
             
             // Potential management
