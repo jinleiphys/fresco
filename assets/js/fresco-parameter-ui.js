@@ -53,9 +53,20 @@ window.FrescoParameterUI = {
             const existing = document.getElementById(param.name);
             const generalSection = this.findGeneralParametersSection();
 
+            // Get value from parsed parameters if available
+            let valueToUse = param.currentValue;
+            if (window.parsedFrescoParameters && window.parsedFrescoParameters[param.name]) {
+                valueToUse = window.parsedFrescoParameters[param.name];
+            }
+
             // If it doesn't exist in the General section, create it
             if (!existing || !generalSection.contains(existing)) {
-                this.addParameterToGeneralSection(param.name, param.currentValue);
+                this.addParameterToGeneralSection(param.name, valueToUse);
+            } else if (existing && valueToUse !== null && valueToUse !== undefined && existing.value !== valueToUse) {
+                // If field exists but value needs to be updated
+                existing.value = valueToUse;
+                existing.dispatchEvent(new Event('change'));
+                console.log(`Updated existing field ${param.name} with value from file: ${valueToUse}`);
             }
         });
     },
@@ -348,6 +359,136 @@ window.FrescoParameterUI = {
         const allocation = this.parameterManager.getCurrentCategorization();
         console.log('Current Parameter State:', allocation);
         alert(`Current State:\n\nGeneral: ${allocation.general.length} parameters\nAdvanced: ${allocation.advanced.length} parameters\n\nSee console for detailed information.`);
+    },
+
+    /**
+     * Collect all FRESCO namelist parameters from the form
+     * This works for all reaction types and collects from both General and dynamically added sections
+     * @returns {Object} Object containing all parameter name-value pairs
+     */
+    getAllFrescoParameters: function() {
+        const formData = {};
+
+        if (!this.parameterManager) {
+            console.warn('Parameter manager not initialized, collecting from DOM only');
+        }
+
+        // Get all parameters from General FRESCO Parameters section
+        const generalSection = this.findGeneralParametersSection();
+        if (generalSection) {
+            const inputs = generalSection.querySelectorAll('input, select, textarea');
+            inputs.forEach(element => {
+                const id = element.id;
+                const value = element.value;
+
+                if (id && value !== '' && value !== null && value !== undefined) {
+                    // Special handling for elab - preserve multi-value format
+                    if (id === 'elab' && typeof value === 'string' && value.includes(' ')) {
+                        formData[id] = value; // Keep as space-separated string
+                    } else if (element.type === 'number') {
+                        // Parse single numeric values
+                        const parsed = parseFloat(value);
+                        if (!isNaN(parsed)) {
+                            formData[id] = parsed;
+                        }
+                    } else if (element.type === 'checkbox') {
+                        formData[id] = element.checked;
+                    } else {
+                        formData[id] = value;
+                    }
+                }
+            });
+        }
+
+        // Get all parameters from Advanced sections (if any are open)
+        const advancedSections = document.querySelectorAll('[id$="-section"], #namelist-forms .glass-card');
+        advancedSections.forEach(section => {
+            const inputs = section.querySelectorAll('input, select, textarea');
+            inputs.forEach(element => {
+                const id = element.id;
+                const value = element.value;
+
+                if (id && value !== '' && value !== null && value !== undefined && !formData.hasOwnProperty(id)) {
+                    // Parse value based on type
+                    if (element.type === 'number') {
+                        const parsed = parseFloat(value);
+                        if (!isNaN(parsed)) {
+                            formData[id] = parsed;
+                        }
+                    } else if (element.type === 'checkbox') {
+                        formData[id] = element.checked;
+                    } else if (element.type === 'select-one') {
+                        const selectedValue = element.selectedOptions[0]?.value;
+                        if (selectedValue === 'true') formData[id] = true;
+                        else if (selectedValue === 'false') formData[id] = false;
+                        else formData[id] = selectedValue;
+                    } else {
+                        formData[id] = value;
+                    }
+                }
+            });
+        });
+
+        // If parameter manager is available, also get categorization info
+        if (this.parameterManager) {
+            const allocation = this.parameterManager.getCurrentCategorization();
+
+            // Add any parameters from the categorization that have current values
+            allocation.general.forEach(param => {
+                if (param.currentValue !== null && param.currentValue !== undefined && !formData.hasOwnProperty(param.name)) {
+                    let value = param.currentValue;
+                    if (param.type === 'number' && typeof value === 'string') {
+                        value = parseFloat(value);
+                    } else if (param.type === 'integer' && typeof value === 'string') {
+                        value = parseInt(value);
+                    } else if (param.type === 'boolean') {
+                        value = value === true || value === 'true' || value === 'T' || value === '1';
+                    }
+                    formData[param.name] = value;
+                }
+            });
+
+            allocation.advanced.forEach(param => {
+                if (param.currentValue !== null && param.currentValue !== undefined && !formData.hasOwnProperty(param.name)) {
+                    // Only add advanced parameters if they differ from defaults
+                    if (param.currentValue !== param.default) {
+                        let value = param.currentValue;
+                        if (param.type === 'number' && typeof value === 'string') {
+                            value = parseFloat(value);
+                        } else if (param.type === 'integer' && typeof value === 'string') {
+                            value = parseInt(value);
+                        } else if (param.type === 'boolean') {
+                            value = value === true || value === 'true' || value === 'T' || value === '1';
+                        }
+                        formData[param.name] = value;
+                    }
+                }
+            });
+        }
+
+        // Include parsed parameters from uploaded files (if any)
+        if (window.parsedFrescoParameters) {
+            Object.keys(window.parsedFrescoParameters).forEach(param => {
+                if (!formData.hasOwnProperty(param)) {
+                    let value = window.parsedFrescoParameters[param];
+
+                    // Special handling for elab - always use parsed value if it contains multiple values
+                    if (param === 'elab' && typeof value === 'string' && value.includes(' ')) {
+                        formData[param] = value; // Keep multi-value format as-is
+                    } else if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
+                        // Parse single numeric values
+                        value = parseFloat(value);
+                        formData[param] = value;
+                    } else {
+                        // Keep as-is for other cases (strings, multi-values, etc.)
+                        formData[param] = value;
+                    }
+                }
+            });
+        }
+
+        console.log('Collected FRESCO parameters:', formData);
+        return formData;
     }
 };
 
@@ -366,6 +507,15 @@ window.resetParametersToDefaults = function() {
 
 window.showParameterState = function() {
     window.FrescoParameterUI.showParameterState();
+};
+
+/**
+ * Global function to get all FRESCO parameters
+ * This replaces the need for individual parameterManager references in each HTML file
+ * @returns {Object} All FRESCO parameter name-value pairs
+ */
+window.getAllFrescoParameters = function() {
+    return window.FrescoParameterUI.getAllFrescoParameters();
 };
 
 console.log('fresco-parameter-ui.js loaded successfully');

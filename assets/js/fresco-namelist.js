@@ -449,10 +449,10 @@ window.FrescoNamelist = {
                 },
                 elab: {
                     label: "Laboratory energy (elab)",
-                    tooltip: "Laboratory energies in MeV. Comma-separated for multiple energies.",
+                    tooltip: "Laboratory energies in MeV. Use spaces or commas for multiple energies (e.g., '6.9 11.0 49.35').",
                     type: "text",
                     default: null,
-                    placeholder: "50.0, 100.0, 200.0",
+                    placeholder: "6.9 11.0 49.35",
                     required: true
                 },
                 nlab: {

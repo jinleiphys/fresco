@@ -760,81 +760,15 @@
                 if (rintp && rintp.trim() !== '') {
                     formData.rintp = parseFloat(rintp);
                 }
-                
-                // Collect parameters from the parameter manager
-                if (parameterManager) {
-                    const allocation = parameterManager.getCurrentCategorization();
-                    
-                    // Add general parameters with current values
-                    allocation.general.forEach(param => {
-                        if (param.currentValue !== null && param.currentValue !== undefined) {
-                            let value = param.currentValue;
-                            // Parse numeric values
-                            if (param.type === 'number' && typeof value === 'string') {
-                                value = parseFloat(value);
-                            } else if (param.type === 'integer' && typeof value === 'string') {
-                                value = parseInt(value);
-                            } else if (param.type === 'boolean') {
-                                value = value === true || value === 'true' || value === 'T' || value === '1';
-                            }
-                            formData[param.name] = value;
-                        }
-                    });
-                    
-                    // Add advanced parameters with non-default values
-                    allocation.advanced.forEach(param => {
-                        if (param.currentValue !== null && param.currentValue !== undefined && param.currentValue !== param.default) {
-                            let value = param.currentValue;
-                            // Parse numeric values
-                            if (param.type === 'number' && typeof value === 'string') {
-                                value = parseFloat(value);
-                            } else if (param.type === 'integer' && typeof value === 'string') {
-                                value = parseInt(value);
-                            } else if (param.type === 'boolean') {
-                                value = value === true || value === 'true' || value === 'T' || value === '1';
-                            }
-                            formData[param.name] = value;
-                        }
-                    });
-                }
-                
-                // Collect additional namelist parameters from advanced sections
-                const namelistForms = document.getElementById('namelist-forms');
-                if (namelistForms) {
-                    const inputs = namelistForms.querySelectorAll('input, select');
-                    inputs.forEach(input => {
-                        const name = input.name;
-                        const value = input.value;
-                        if (name && value !== '' && value !== null && value !== undefined && !formData.hasOwnProperty(name)) {
-                            if (input.type === 'number') {
-                                formData[name] = parseFloat(value);
-                            } else if (input.type === 'select-one' && input.selectedOptions[0]) {
-                                const selectedValue = input.selectedOptions[0].value;
-                                if (selectedValue === 'true') formData[name] = true;
-                                else if (selectedValue === 'false') formData[name] = false;
-                                else formData[name] = selectedValue;
-                            } else {
-                                formData[name] = value;
-                            }
-                        }
-                    });
-                }
-                
-                // Include parsed parameters from uploaded files (only if not already specified in form)
-                if (window.parsedFrescoParameters) {
-                    Object.keys(window.parsedFrescoParameters).forEach(param => {
-                        if (!formData.hasOwnProperty(param)) {
-                            let value = window.parsedFrescoParameters[param];
-                            // Try to parse as number if it looks like a number
-                            if (typeof value === 'string' && /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
-                                value = parseFloat(value);
-                            }
-                            formData[param] = value;
-                            console.log(`Including parsed parameter: ${param} = ${value}`);
-                        }
-                    });
-                }
-                
+
+                // Collect all FRESCO namelist parameters using shared function
+                // This automatically collects from:
+                // - General FRESCO Parameters section (default + dynamically added)
+                // - Advanced parameter sections (if open)
+                // - Uploaded input file parameters
+                const allFrescoParams = window.getAllFrescoParameters();
+                Object.assign(formData, allFrescoParams);
+
                 // Generate namelist using the configuration
                 const namelistSection = window.FrescoNamelist.generateNamelistSection(formData);
                 

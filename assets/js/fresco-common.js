@@ -209,31 +209,8 @@ function handleFileUpload(event, formType) {
         try {
             const content = e.target.result;
             
-            // Use parameter manager if available
-            if (typeof window.parameterManager !== 'undefined' && window.parameterManager) {
-                window.parameterManager.processUploadedFile(content)
-                    .then(results => {
-                        // Update parameter display if function exists
-                        if (typeof window.updateParameterDisplay === 'function') {
-                            window.updateParameterDisplay();
-                        }
-                        
-                        // Still run legacy parsing for other form fields
-                        parseAndPopulateForm(content, formType);
-                        
-                        showNotification(`File loaded successfully! ${results.processed} parameters processed, ${results.moved} moved to General.`, 'success');
-                    })
-                    .catch(error => {
-                        console.error('Parameter manager processing error:', error);
-                        // Fallback to legacy parsing
-                        parseAndPopulateForm(content, formType);
-                        showNotification('Input file loaded successfully (using legacy parsing)!', 'success');
-                    });
-            } else {
-                // Fallback to legacy parsing
-                parseAndPopulateForm(content, formType);
-                showNotification('Input file loaded successfully!', 'success');
-            }
+            // Always use the unified parsing approach
+            parseAndPopulateForm(content, formType);
         } catch (error) {
             console.error('Error parsing file:', error);
             showNotification('Error parsing input file: ' + error.message, 'error');
@@ -258,13 +235,14 @@ function parseAndPopulateForm(content, formType) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        // Skip comments and empty lines - be careful not to skip "&FRESCO" 
-        if (line === '' || 
-            line.startsWith('!') || 
-            line.startsWith('#') || 
-            line.startsWith('*') || 
-            (line.startsWith('C') && !line.startsWith('&')) ||
-            (line.startsWith('c') && !line.startsWith('&'))) continue;
+        // Skip comments and empty lines - be careful not to skip "&FRESCO"
+        // Fortran comments: 'C' or 'c' followed by space, or !, #, *
+        if (line === '' ||
+            line.startsWith('!') ||
+            line.startsWith('#') ||
+            line.startsWith('*') ||
+            (line.startsWith('C ') && !line.startsWith('&')) ||
+            (line.startsWith('c ') && !line.startsWith('&'))) continue;
         
         // Detect namelist start
         if (line.startsWith('&')) {
@@ -294,15 +272,36 @@ function parseAndPopulateForm(content, formType) {
         }
         
         // Detect namelist end
-        if (line === '/' || line === '&end') {
+        if (line === '/' || line === '&end' || line.trim() === '/') {
             console.log(`End of namelist: ${currentNamelist}`);
             currentNamelist = null;
             continue;
         }
-        
+
         // Parse parameters within namelist
         if (currentNamelist && line.includes('=')) {
-            parseParametersFromLine(line, namelists[currentNamelist]);
+            console.log(`Processing parameter line in ${currentNamelist}: "${line}"`);
+
+            // Check if line contains both parameter and terminator (e.g., "cutc=20 /")
+            let cleanLine = line;
+            if (line.includes('/')) {
+                // Split at the '/' and get everything before it
+                const slashIndex = line.indexOf('/');
+                cleanLine = line.substring(0, slashIndex).trim();
+                console.log(`  Line contains terminator, extracted: "${cleanLine}"`);
+
+                // Parse the parameters before the /
+                if (cleanLine && cleanLine.includes('=')) {
+                    parseParametersFromLine(cleanLine, namelists[currentNamelist]);
+                }
+
+                // End the namelist
+                console.log(`End of namelist: ${currentNamelist}`);
+                currentNamelist = null;
+                continue;
+            }
+
+            parseParametersFromLine(cleanLine, namelists[currentNamelist]);
         }
     }
     
@@ -364,9 +363,30 @@ function parseParametersFromLine(line, namelistObj) {
                     // Skip the consumed tokens
                     i = j - 1;
                 } else {
-                    // Regular parameter - only take the immediate value
-                    namelistObj[key.toLowerCase()] = value;
-                    console.log(`  ${key} = ${value}`);
+                    // Regular parameter - check if there are multiple values following
+                    const values = [value];
+
+                    // For certain parameters like elab, check if multiple space-separated values follow
+                    // Look ahead for more numeric values that might belong to this parameter
+                    let j = i + 1;
+                    const multiValueParams = ['elab', 'ek', 'thetas', 'energies']; // Parameters that can have multiple values
+
+                    if (multiValueParams.includes(key.toLowerCase())) {
+                        while (j < tokens.length && !tokens[j].includes('=') && /^[\d\.\-\+eE]+$/.test(tokens[j])) {
+                            values.push(tokens[j]);
+                            j++;
+                        }
+                    }
+
+                    // Store as space-separated string if multiple values, otherwise as single value
+                    if (values.length > 1) {
+                        namelistObj[key.toLowerCase()] = values.join(' ');
+                        console.log(`  ${key} = ${values.join(' ')} (${values.length} values)`);
+                        i = j - 1; // Skip the consumed tokens
+                    } else {
+                        namelistObj[key.toLowerCase()] = value;
+                        console.log(`  ${key} = ${value}`);
+                    }
                 }
             }
         }
@@ -752,7 +772,23 @@ function populateFormFields(namelists, formType, content) {
     }
     
     console.log(`Total fields populated: ${fieldsPopulated}`);
-    
+
+    // Update parameter manager categorization based on uploaded file parameters
+    if (window.FrescoParameterManager && window.parsedFrescoParameters) {
+        const uploadedParams = Object.keys(window.parsedFrescoParameters);
+        if (uploadedParams.length > 0) {
+            console.log('Updating parameter categorization from uploaded file:', uploadedParams);
+            window.FrescoParameterManager.updateCategorizationFromInputFile(uploadedParams);
+
+            // If FrescoParameterUI is available, refresh the display and ensure fields exist
+            if (window.FrescoParameterUI) {
+                window.FrescoParameterUI.ensureGeneralParameterFields();
+                window.FrescoParameterUI.updateParameterDisplay();
+                console.log('Parameter UI updated with uploaded file parameters');
+            }
+        }
+    }
+
     if (fieldsPopulated === 0) {
         showNotification('No matching form fields found. The input file format may not be compatible.', 'warning');
     } else {
