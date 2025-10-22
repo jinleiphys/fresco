@@ -25,12 +25,13 @@ The application consists of reaction-type-specific HTML pages that share common 
 **Shared JavaScript Modules (`assets/js/`):**
 - `fresco-namelist.js` - Complete definition of all 84 FRESCO namelist parameters with metadata (tooltips, defaults, types, validation)
 - `fresco-parameter-manager.js` - Dynamic parameter categorization system (object, not a constructor)
+- `fresco-parameter-ui.js` - **NEW** Shared UI for parameter management and smart parameter collection
 - `fresco-common.js` - File parsing, form population utilities, and theme management
 - `fresco-integration.js` - UI integration and event handling
 - `fresco-shared-components.js` - Shared HTML components (footer, theme toggle, home link) dynamically injected into all pages
 - `fresco-generator.js` - Shared input file generation functions (copy to clipboard, download file, button initialization)
 
-All HTML files load these six JavaScript files in order. Each page defines its own reaction-specific `window.generateInputFile()` function, while `fresco-generator.js` provides shared `copyToClipboard()` and `downloadInputFile()` functions that work across all pages.
+All HTML files load these seven JavaScript files in order. Each page defines its own reaction-specific `window.generateInputFile()` function, while `fresco-generator.js` provides shared `copyToClipboard()` and `downloadInputFile()` functions that work across all pages.
 
 ### Dynamic Parameter System
 
@@ -49,7 +50,12 @@ The application implements a sophisticated dynamic parameter management system t
 **Key Functions:**
 - `FrescoParameterManager.init()` - Initialize with default categorization
 - `FrescoParameterManager.updateCategorizationFromInputFile(params)` - Promote parameters to General section
-- `FrescoParameterManager.getCurrentCategorization()` - Get current general/advanced lists
+- `FrescoParameterManager.getCurrentCategorization()` - Get current general/advanced lists with full metadata
+- `FrescoParameterManager.moveParameter(paramName, toGeneral)` - Move parameter between sections
+- `FrescoParameterManager.resetToDefaults()` - Reset to default categorization
+- `FrescoParameterUI.init(defaultGeneralParams)` - Initialize UI with reaction-specific defaults
+- `FrescoParameterUI.getAllFrescoParameters()` - **Smart collection** of all FRESCO parameters from form
+- `FrescoParameterUI.ensureGeneralParameterFields()` - Create form fields for promoted parameters
 - `FrescoNamelist.getAllFormData()` - Extract all parameter values from form
 - `FrescoNamelist.generateNamelistSection(formData)` - Generate &FRESCO namelist text
 
@@ -221,13 +227,14 @@ Each HTML page defines its own `window.generateInputFile()` function with reacti
 
 2. **Default Value Handling**: Parameters with `default: null` are NOT written to output unless user provides a value. Parameters with specific defaults (e.g., `default: 0.1`) are only written if the user changes them.
 
-3. **Script Load Order**: The six JavaScript files must be loaded in this exact order:
+3. **Script Load Order**: The seven JavaScript files must be loaded in this exact order:
    - `fresco-namelist.js` (defines parameters)
    - `fresco-parameter-manager.js` (categorization logic - note: it's an object, NOT a constructor)
+   - `fresco-parameter-ui.js` (parameter UI and smart collection)
    - `fresco-common.js` (parsing utilities and theme management)
    - `fresco-integration.js` (UI binding)
-   - `fresco-shared-components.js` (shared HTML components injection)
    - `fresco-generator.js` (shared generation functions and button handlers)
+   - `fresco-shared-components.js` (shared HTML components injection)
 
 4. **Namelist Format**: FRESCO is strict about namelist format. Always use `parameter=value` (no spaces around `=`) and terminate with `/` on a new line.
 
@@ -237,7 +244,82 @@ Each HTML page includes file upload capability that:
 1. Parses existing FRESCO input files (`.in`, `.inp`, `.txt`)
 2. Extracts all &FRESCO namelist parameters
 3. Dynamically reorganizes General/Advanced sections
-4. Populates form fields with values from file
-5. Adds visual "From File" badges to indicate source
+4. **Automatically creates form fields** for promoted parameters with values
+5. Populates form fields with values from file
+6. Adds visual "From File" badges to indicate source
 
 This allows users to load, modify, and regenerate FRESCO input files easily.
+
+### File Parsing Features
+
+The parser in `fresco-common.js` handles:
+- **Fortran Comments**: Only `C ` or `c ` followed by space (NOT `centre=`, `cutc=`, etc.)
+- **Multi-Value Parameters**: Space-separated values (e.g., `elab=6.9 11.0 49.35`)
+- **Terminator Handling**: Parameters on same line as `/` (e.g., `cutc=20 /`)
+- **Array Parameters**: Fortran array syntax like `p(1:3)=`
+- **Value Preservation**: Multi-value strings preserved throughout collection and generation
+
+### Smart Parameter Collection
+
+Use `window.getAllFrescoParameters()` to collect ALL FRESCO parameters from any page:
+
+```javascript
+// In generateInputFile() function - replaces ~60 lines of code!
+const allFrescoParams = window.getAllFrescoParameters();
+Object.assign(formData, allFrescoParams);
+```
+
+This function automatically collects from:
+- General FRESCO Parameters section (default + dynamically added)
+- Advanced parameter sections (if opened)
+- Uploaded input file parameters
+- Handles multi-value parameters correctly (elab, ek, etc.)
+- Parses types correctly (number, boolean, string)
+
+**Example Usage** (see `elastic.html:764-770`):
+```javascript
+const allFrescoParams = window.getAllFrescoParameters();
+Object.assign(formData, allFrescoParams);
+```
+
+## FRESCO Parameter Management UI
+
+The FRESCO Parameter Management card is **collapsible and collapsed by default** to provide a cleaner interface:
+
+### UI Features:
+- **Collapsed by default** - Advanced users can click to expand
+- **Clickable header** - Click "FRESCO Parameter Management" to toggle
+- **Visual feedback** - Chevron icon rotates (▼ collapsed, ▲ expanded)
+- **Smooth animation** - Bootstrap collapse transition
+- **Consistent across pages** - Same behavior on all reaction types
+
+### Implementation:
+Each page initializes with reaction-specific default general parameters:
+
+```javascript
+// Example from elastic.html
+const elasticDefaultGeneralParams = [
+    'hcm', 'rmatch', 'jtmax', 'absend',
+    'thmin', 'thmax', 'thinc',
+    'elab', 'iter',
+    'chans', 'smats', 'xstabl'
+];
+
+window.FrescoParameterUI.init(elasticDefaultGeneralParams);
+```
+
+Different reaction types can have different default parameters:
+- **Elastic**: 12 basic scattering parameters
+- **Inelastic**: 13 parameters (includes `iblock` for coupled channels)
+- **Transfer**: Can include transfer-specific parameters
+- **Capture**: Can include EM transition parameters
+- **Breakup**: **NOTE**: Uses different namelist structure - requires special treatment
+
+### User Workflow:
+1. User loads page → Parameter Management card is **hidden**
+2. User uploads file → Parameters auto-populate in General FRESCO Parameters section
+3. User can expand Parameter Management to:
+   - Move parameters between General/Advanced
+   - Reset to defaults
+   - View current categorization state
+- breakup.html is different, one need to use special treatment

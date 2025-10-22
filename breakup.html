@@ -59,11 +59,16 @@
 
         <!-- Dynamic Parameter Management System -->
         <div class="glass-card advanced-fresco-card">
-            <h3><i class="fas fa-sliders-h me-2"></i>FRESCO Parameter Management</h3>
-            <p class="text-white-50 mb-3">Dynamically manage parameters between General and Advanced sections. Upload a FRESCO file to automatically populate parameters.</p>
-            
-            <!-- Parameter Sections -->
-            <div class="row">
+            <h3 class="d-flex justify-content-between align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#parameterManagementContent" aria-expanded="false">
+                <span><i class="fas fa-sliders-h me-2"></i>FRESCO Parameter Management</span>
+                <i class="fas fa-chevron-down" id="paramMgmtToggleIcon"></i>
+            </h3>
+
+            <div class="collapse" id="parameterManagementContent">
+                <p class="text-white-50 mb-3">Dynamically manage parameters between General and Advanced sections. Upload a FRESCO file to automatically populate parameters.</p>
+
+                <!-- Parameter Sections -->
+                <div class="row">
                 <!-- General Parameters -->
                 <div class="col-md-6">
                     <div class="parameter-section mb-3" style="border: 1px solid #444; border-radius: 8px; overflow: hidden;">
@@ -91,14 +96,15 @@
                 </div>
             </div>
             
-            <!-- Parameter Management Controls -->
-            <div class="text-center mt-3">
-                <button type="button" class="btn btn-outline-light btn-sm me-2" onclick="resetParametersToDefaults()">
-                    <i class="fas fa-undo me-1"></i>Reset to Defaults
-                </button>
-                <button type="button" class="btn btn-outline-info btn-sm" onclick="showParameterState()">
-                    <i class="fas fa-info-circle me-1"></i>Show Current State
-                </button>
+                <!-- Parameter Management Controls -->
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-outline-light btn-sm me-2" onclick="resetParametersToDefaults()">
+                        <i class="fas fa-undo me-1"></i>Reset to Defaults
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm" onclick="showParameterState()">
+                        <i class="fas fa-info-circle me-1"></i>Show Current State
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1059,7 +1065,21 @@
             } else {
                 console.error('FrescoParameterManager not available');
             }
-            
+
+            // Toggle chevron icon for Parameter Management collapse
+            const paramMgmtContent = document.getElementById('parameterManagementContent');
+            const paramMgmtIcon = document.getElementById('paramMgmtToggleIcon');
+            if (paramMgmtContent && paramMgmtIcon) {
+                paramMgmtContent.addEventListener('show.bs.collapse', function() {
+                    paramMgmtIcon.classList.remove('fa-chevron-down');
+                    paramMgmtIcon.classList.add('fa-chevron-up');
+                });
+                paramMgmtContent.addEventListener('hide.bs.collapse', function() {
+                    paramMgmtIcon.classList.remove('fa-chevron-up');
+                    paramMgmtIcon.classList.add('fa-chevron-down');
+                });
+            }
+
             // Check if FrescoNamelist is available for backward compatibility
             console.log('DOM loaded, checking FrescoNamelist:', typeof window.FrescoNamelist);
             
