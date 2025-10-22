@@ -25,13 +25,14 @@ The application consists of reaction-type-specific HTML pages that share common 
 **Shared JavaScript Modules (`assets/js/`):**
 - `fresco-namelist.js` - Complete definition of all 84 FRESCO namelist parameters with metadata (tooltips, defaults, types, validation)
 - `fresco-parameter-manager.js` - Dynamic parameter categorization system (object, not a constructor)
-- `fresco-parameter-ui.js` - **NEW** Shared UI for parameter management and smart parameter collection
+- `fresco-parameter-ui.js` - Shared UI for parameter management and smart parameter collection
+- `fresco-partition-states.js` - **NEW** Shared helper for &PARTITION and &STATES namelist generation
 - `fresco-common.js` - File parsing, form population utilities, and theme management
 - `fresco-integration.js` - UI integration and event handling
 - `fresco-shared-components.js` - Shared HTML components (footer, theme toggle, home link) dynamically injected into all pages
 - `fresco-generator.js` - Shared input file generation functions (copy to clipboard, download file, button initialization)
 
-All HTML files load these seven JavaScript files in order. Each page defines its own reaction-specific `window.generateInputFile()` function, while `fresco-generator.js` provides shared `copyToClipboard()` and `downloadInputFile()` functions that work across all pages.
+All HTML files load these eight JavaScript files in order. Each page defines its own reaction-specific `window.generateInputFile()` function, while `fresco-generator.js` provides shared `copyToClipboard()` and `downloadInputFile()` functions that work across all pages.
 
 ### Dynamic Parameter System
 
@@ -58,6 +59,29 @@ The application implements a sophisticated dynamic parameter management system t
 - `FrescoParameterUI.ensureGeneralParameterFields()` - Create form fields for promoted parameters
 - `FrescoNamelist.getAllFormData()` - Extract all parameter values from form
 - `FrescoNamelist.generateNamelistSection(formData)` - Generate &FRESCO namelist text
+
+### Partition & States System
+
+The application includes a shared helper module for generating &PARTITION and &STATES namelists:
+
+**Key Features:**
+- **Smart data handling** - Automatically uses parsed data from uploaded files when available
+- **Form data fallback** - Generates from form fields when no file is uploaded
+- **Multi-state support** - Properly handles inelastic scattering with multiple excited states
+- **Clean parsing** - Silently stores advanced partition/states parameters without console errors
+
+**Key Functions:**
+- `FrescoPartitionStates.generateSingle(namep, massp, zp, jp, namet, masst, zt, jt, qval)` - Generate single partition (elastic, inelastic)
+- `FrescoPartitionStates.generateTwoPartitions(partition1, partition2)` - Generate two partitions (transfer, capture)
+- `FrescoPartitionStates.generateFromData(partitions)` - Generate from custom partition array
+- `FrescoPartitionStates.clearParsedData()` - Clear cached data from uploaded files
+
+**Parsing Behavior:**
+- When a file is uploaded, partition/states data is stored in `window.parsedPartitionStatesData`
+- Only basic fields (projectile, target, mass, charge, spin) are populated in the UI
+- Advanced parameters (nex, pwf, copyp, bandp, ep, et, etc.) are silently preserved
+- On regeneration, if parsed data exists, it's used with all original parameters intact
+- If no parsed data, simple defaults are generated from form fields
 
 ### FRESCO Namelist Structure
 
@@ -227,16 +251,23 @@ Each HTML page defines its own `window.generateInputFile()` function with reacti
 
 2. **Default Value Handling**: Parameters with `default: null` are NOT written to output unless user provides a value. Parameters with specific defaults (e.g., `default: 0.1`) are only written if the user changes them.
 
-3. **Script Load Order**: The seven JavaScript files must be loaded in this exact order:
+3. **Value Validation**: All numeric parameter collection includes NaN and Infinity checks:
+   - Empty form fields are skipped (not written as `parameter=NaN`)
+   - Invalid numeric values (NaN, Infinity) are automatically filtered out
+   - Validation happens in three places: parameter collection, namelist generation, and file parsing
+   - Use `window.getAllFrescoParameters()` to ensure proper validation
+
+4. **Script Load Order**: The eight JavaScript files must be loaded in this exact order:
    - `fresco-namelist.js` (defines parameters)
    - `fresco-parameter-manager.js` (categorization logic - note: it's an object, NOT a constructor)
    - `fresco-parameter-ui.js` (parameter UI and smart collection)
    - `fresco-common.js` (parsing utilities and theme management)
    - `fresco-integration.js` (UI binding)
    - `fresco-generator.js` (shared generation functions and button handlers)
+   - `fresco-partition-states.js` (partition/states helper)
    - `fresco-shared-components.js` (shared HTML components injection)
 
-4. **Namelist Format**: FRESCO is strict about namelist format. Always use `parameter=value` (no spaces around `=`) and terminate with `/` on a new line.
+5. **Namelist Format**: FRESCO is strict about namelist format. Always use `parameter=value` (no spaces around `=`) and terminate with `/` on a new line.
 
 ## File Upload Feature
 
@@ -258,6 +289,8 @@ The parser in `fresco-common.js` handles:
 - **Terminator Handling**: Parameters on same line as `/` (e.g., `cutc=20 /`)
 - **Array Parameters**: Fortran array syntax like `p(1:3)=`
 - **Value Preservation**: Multi-value strings preserved throughout collection and generation
+- **Partition/States Handling**: Silently stores advanced parameters (nex, pwf, copyp, bandp, ep, et, etc.) for perfect roundtrip
+- **Clean Console Output**: No error messages for expected missing fields in partition/states namelists
 
 ### Smart Parameter Collection
 
@@ -280,6 +313,48 @@ This function automatically collects from:
 ```javascript
 const allFrescoParams = window.getAllFrescoParameters();
 Object.assign(formData, allFrescoParams);
+```
+
+### Inelastic Scattering with Multiple Excited States
+
+The `inelastic.html` page properly handles multiple target excited states:
+
+**How it works:**
+1. User defines excited states in the Target States section
+2. Each state has: spin (Jt), parity, and excitation energy
+3. On generation, all states are collected and included in &STATES namelists
+
+**Example Code** (from `inelastic.html:1537-1578`):
+```javascript
+// Collect all target excited states
+const targStateSpins = document.querySelectorAll('.targ-state-spin');
+const targStateParities = document.querySelectorAll('.targ-state-parity');
+const targStateEnergies = document.querySelectorAll('.targ-state-energy');
+
+// Create states array with correct nex value
+const nex = targStateSpins.length;
+const states = [];
+for (let i = 0; i < targStateSpins.length; i++) {
+    states.push({
+        jp: 0, copyp: i === 0 ? 0 : 1, bandp: 1, ep: 0.0,
+        jt: spin, copyt: 0, bandt: parity > 0 ? 1 : -1, et: energy
+    });
+}
+
+// Generate with all states
+const partitionStatesSection = window.FrescoPartitionStates.generateFromData([{
+    namep, massp, zp, jp, namet, masst, zt, jt,
+    nex: nex, qval: 0, pwf: true,
+    states: states
+}]);
+```
+
+**Output format:**
+```
+&PARTITION namep='alpha' massp=4.00 zp=2 namet='12C' masst=12.0 zt=6 nex=2 pwf=T /
+&STATES jp=0 copyp=0 bandp=1 ep=0.0 jt=0.0 copyt=0 bandt=1 et=0.0 /
+&STATES jp=0 copyp=1 bandp=1 ep=0.0 jt=2.0 copyt=0 bandt=1 et=4.44 /
+&PARTITION /
 ```
 
 ## FRESCO Parameter Management UI
