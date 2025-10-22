@@ -22,6 +22,8 @@
     <script src="assets/js/fresco-integration.js"></script>
     <script src="assets/js/fresco-generator.js"></script>
     <script src="assets/js/fresco-partition-states.js"></script>
+    <script src="assets/js/fresco-potential.js"></script>
+    <script src="assets/js/fresco-potential-ui.js"></script>
     <script src="assets/js/fresco-shared-components.js"></script>
 </head>
 <body>
@@ -1403,73 +1405,31 @@
                 cfpCount = cfps.length;
             }
             
-            // Add a nuclear potential
-            function addPotential() {
-                potentialCount++;
-                
-                // Clone the template
-                const potentialNode = document.importNode(potentialTemplate.content, true);
-                
-                // Set unique IDs and update labels
-                const potentialCard = potentialNode.querySelector('.potential-card');
-                potentialCard.dataset.potentialId = potentialCount;
-                potentialCard.querySelector('.potential-number').textContent = potentialCount;
-                
-                // Set remove button action
-                potentialCard.querySelector('.remove-potential').addEventListener('click', function(e) {
-                    e.preventDefault();
-                    potentialCard.remove();
-                    updatePotentialNumbers();
-                });
-                
-                // Add potential shape change handler
-                const potentialTypeSelect = potentialCard.querySelector('.potential-type');
-                potentialTypeSelect.addEventListener('change', function() {
-                    updatePotentialParameters(potentialCard, this.value);
-                });
-                
-                // Append to container
-                potentialContainer.appendChild(potentialNode);
-                
-                return potentialCard;
+            // Initialize the new potential management system
+            if (typeof window.FrescoPotentialUI !== 'undefined') {
+                window.FrescoPotentialUI.init(
+                    'transfer',                     // Reaction type
+                    'potential-container',          // Container ID
+                    'add-potential-btn',            // Add button ID
+                    null                            // No Coulomb form (handled differently for transfer)
+                );
+                console.log('Potential UI initialized for transfer reaction');
+            } else {
+                console.error('FrescoPotentialUI not available');
             }
-            
-            // Update numbering when a potential is removed
-            function updatePotentialNumbers() {
-                const potentials = potentialContainer.querySelectorAll('.potential-card');
-                potentials.forEach((potential, index) => {
-                    potential.querySelector('.potential-number').textContent = index + 1;
-                    potential.dataset.potentialId = index + 1;
-                });
-                potentialCount = potentials.length;
-            }
-            
-            // Update potential parameters based on type
-            function updatePotentialParameters(card, type) {
-                // This can be expanded to show/hide parameters based on potential type
-                console.log('Potential type changed to:', type);
-            }
-            
-            // Make addPotential globally accessible for file upload
-            window.addPotential = addPotential;
-            
+
             // Add initial overlap and CFP
             addOverlap();
             addCfp();
-            
+
             // Add overlap button listener
             addOverlapBtn.addEventListener('click', function() {
                 addOverlap();
             });
-            
+
             // Add CFP button listener
             addCfpBtn.addEventListener('click', function() {
                 addCfp();
-            });
-            
-            // Add potential button listener
-            addPotentialBtn.addEventListener('click', function() {
-                addPotential();
             });            // Generate input file function
             window.generateInputFile = function() {
                 // Get form values - General parameters

@@ -26,13 +26,15 @@ The application consists of reaction-type-specific HTML pages that share common 
 - `fresco-namelist.js` - Complete definition of all 84 FRESCO namelist parameters with metadata (tooltips, defaults, types, validation)
 - `fresco-parameter-manager.js` - Dynamic parameter categorization system (object, not a constructor)
 - `fresco-parameter-ui.js` - Shared UI for parameter management and smart parameter collection
-- `fresco-partition-states.js` - **NEW** Shared helper for &PARTITION and &STATES namelist generation
+- `fresco-partition-states.js` - Shared helper for &PARTITION and &STATES namelist generation
+- `fresco-potential.js` - **NEW** Comprehensive potential management (all 22 FRESCO potential TYPEs and SHAPEs)
+- `fresco-potential-ui.js` - **NEW** Dynamic potential card UI generation and management
 - `fresco-common.js` - File parsing, form population utilities, and theme management
 - `fresco-integration.js` - UI integration and event handling
 - `fresco-shared-components.js` - Shared HTML components (footer, theme toggle, home link) dynamically injected into all pages
 - `fresco-generator.js` - Shared input file generation functions (copy to clipboard, download file, button initialization)
 
-All HTML files load these eight JavaScript files in order. Each page defines its own reaction-specific `window.generateInputFile()` function, while `fresco-generator.js` provides shared `copyToClipboard()` and `downloadInputFile()` functions that work across all pages.
+All HTML files load these ten JavaScript files in order. Each page defines its own reaction-specific `window.generateInputFile()` function, while `fresco-generator.js` provides shared `copyToClipboard()` and `downloadInputFile()` functions that work across all pages.
 
 ### Dynamic Parameter System
 
@@ -82,6 +84,94 @@ The application includes a shared helper module for generating &PARTITION and &S
 - Advanced parameters (nex, pwf, copyp, bandp, ep, et, etc.) are silently preserved
 - On regeneration, if parsed data exists, it's used with all original parameters intact
 - If no parsed data, simple defaults are generated from form fields
+
+### Potential Management System
+
+The application includes a comprehensive potential management system for &POT namelists, supporting all 22 FRESCO potential types and shapes based on the FRESCO manual (Section 3.4).
+
+**Key Features:**
+- **Complete TYPE support** - All potential types (0-21): Coulomb, central, spin-orbit, tensor, deformation, nucleon-nucleon
+- **Smart SHAPE filtering** - Automatically shows only valid shapes for each TYPE
+- **Reaction-specific defaults** - Each reaction type loads optimized default potentials
+- **File parsing** - Automatically parses &POT namelists from uploaded files
+- **Dynamic UI** - Add/remove potential cards with live validation
+
+**Key Modules:**
+- `fresco-potential.js` - Core potential logic (definitions, parsing, generation, CRUD operations)
+- `fresco-potential-ui.js` - UI management (card generation, event handling, form population)
+
+**Potential TYPE Definitions:**
+- **TYPE 0**: Coulomb potential (radii definition)
+- **TYPE 1**: Central potential, Volume
+- **TYPE 2**: Central potential, Derivative (surface)
+- **TYPE 3-4**: Spin-orbit for projectile/target
+- **TYPE 5-7**: Tensor forces (projectile, target, combined)
+- **TYPE 8**: Spin·spin force
+- **TYPE 9**: Effective mass reduction
+- **TYPE 10-17**: Deformation potentials (ROTOR, matrix elements, all-order coupled)
+- **TYPE 20-21**: Nucleon-nucleon potentials (SSC, user-supplied)
+
+**SHAPE Options by TYPE:**
+- **Volume (TYPE=1,8,15)**: Woods-Saxon (0), WS squared (1), Gaussian (2), Yukawa (3), Exponential (4), Reid soft core (5-6), Read from file (7-9), Fourier-Bessel (-1)
+- **Surface (TYPE=2)**: First derivative forms (0-6), Read from file (7-9)
+- **Deformation (TYPE≥10)**: Read from file (7-9), Coulomb/Nuclear multipoles (10), Gaussian quadrature (11-13)
+- **Special**: Write to file (10-19), J-dependent (20-24), L/J-dependent (30+), Parity/L/J-dependent (40-42)
+
+**Key Functions:**
+- `FrescoPotential.init(reactionType)` - Initialize for specific reaction type
+- `FrescoPotential.parsePotentials(fileContent)` - Parse &POT namelists from file
+- `FrescoPotential.generatePotentialSection()` - Generate formatted &POT output
+- `FrescoPotential.addPotential(potentialObj)` - Add new potential
+- `FrescoPotential.updateCoulombPotential(updates)` - Update Coulomb potential
+- `FrescoPotentialUI.init(type, containerId, addBtnId, coulombFormId)` - Initialize UI
+- `FrescoPotentialUI.generatePotentialSection()` - Generate &POT section for output
+- `FrescoPotentialUI.loadFromFile(fileContent)` - Load potentials from uploaded file
+
+**Integration Example** (from `elastic.html`):
+```javascript
+// Initialize potential system
+window.FrescoPotentialUI.init(
+    'elastic',                      // Reaction type
+    'potential-container',          // Container ID
+    'add-potential-btn',            // Add button ID
+    'coulomb-potential'             // Coulomb form ID
+);
+
+// In generateInputFile():
+const potentialSection = window.FrescoPotentialUI.generatePotentialSection();
+```
+
+**Potential Object Structure:**
+```javascript
+{
+    kp: 1,              // Potential number (negative for last)
+    type: 1,            // TYPE (0-21)
+    shape: 0,           // SHAPE (depends on TYPE)
+    it: 0,              // IT parameter (0-3)
+    p0: 0.0,            // Additional parameter
+    p1: 40.0,           // Real depth/strength
+    p2: 1.2,            // Real radius
+    p3: 0.65,           // Real diffuseness
+    p4: 10.0,           // Imaginary depth/strength
+    p5: 1.2,            // Imaginary radius
+    p6: 0.5,            // Imaginary diffuseness
+    p7: 0.0             // Further parameter
+}
+```
+
+**Reaction-Specific Integration:**
+- **elastic.html**: Fully integrated - uses `FrescoPotentialUI` for all potential management
+- **inelastic.html**: Fully integrated - optical model potentials use new system, deformation potential separate
+- **transfer.html**: Partially integrated - multi-partition potentials (KP=1,2,3,4) remain hardcoded, new system available for additional potentials
+- **capture.html**: Ready for integration - script tags added, awaiting implementation
+- **breakup.html**: Not integrated - uses different namelist structure
+
+**Important Notes:**
+- The system automatically sets KP negative for the last potential in the list
+- Shape options are dynamically filtered based on selected TYPE
+- All parameters are validated (no NaN or Infinity values)
+- Parsing preserves all parameters including special ones (jl, lshape, xlvary, alvary, datafile)
+- See `POTENTIAL_SYSTEM_README.md` for comprehensive documentation
 
 ### FRESCO Namelist Structure
 
@@ -196,6 +286,49 @@ categories: {
 
 Edit `defaultGeneralParams` array in `fresco-parameter-manager.js:8-11` to change which parameters appear in the General section by default.
 
+### Working with Potentials
+
+The potential system is designed to be integrated into HTML pages with minimal code:
+
+**Initialization:**
+```javascript
+// In page initialization (after DOMContentLoaded)
+window.FrescoPotentialUI.init(
+    'elastic',                  // Reaction type: 'elastic', 'inelastic', 'transfer', or 'capture'
+    'potential-container',      // ID of container div for nuclear potential cards
+    'add-potential-btn',        // ID of "Add Nuclear Potential" button
+    'coulomb-potential'         // ID of Coulomb potential form (optional, can be null)
+);
+```
+
+**Generation:**
+```javascript
+// In window.generateInputFile() function
+const potentialSection = window.FrescoPotentialUI.generatePotentialSection();
+
+// Include in output
+let inputContent = `${header}
+NAMELIST
+${namelistSection}
+
+${partitionStatesSection}
+${potentialSection}`;
+```
+
+**File Upload Integration:**
+```javascript
+// In file upload handler (after parsing file content)
+window.FrescoPotentialUI.loadFromFile(fileContent);
+```
+
+**Adding Custom Potential Types:**
+To add new potential types or shapes, edit the definitions in `fresco-potential.js`:
+- `POTENTIAL_TYPES` object for new TYPEs
+- `VOLUME_SHAPES`, `SURFACE_SHAPES`, etc. for new SHAPEs
+- `DEFAULT_POTENTIALS` object for reaction-specific defaults
+
+The UI will automatically update to include new options.
+
 ### Form Population from Input Files
 
 The file parsing in `fresco-common.js` uses regex to extract namelist parameters:
@@ -257,7 +390,7 @@ Each HTML page defines its own `window.generateInputFile()` function with reacti
    - Validation happens in three places: parameter collection, namelist generation, and file parsing
    - Use `window.getAllFrescoParameters()` to ensure proper validation
 
-4. **Script Load Order**: The eight JavaScript files must be loaded in this exact order:
+4. **Script Load Order**: The ten JavaScript files must be loaded in this exact order:
    - `fresco-namelist.js` (defines parameters)
    - `fresco-parameter-manager.js` (categorization logic - note: it's an object, NOT a constructor)
    - `fresco-parameter-ui.js` (parameter UI and smart collection)
@@ -265,6 +398,8 @@ Each HTML page defines its own `window.generateInputFile()` function with reacti
    - `fresco-integration.js` (UI binding)
    - `fresco-generator.js` (shared generation functions and button handlers)
    - `fresco-partition-states.js` (partition/states helper)
+   - `fresco-potential.js` (potential definitions, parsing, generation)
+   - `fresco-potential-ui.js` (potential card UI management)
    - `fresco-shared-components.js` (shared HTML components injection)
 
 5. **Namelist Format**: FRESCO is strict about namelist format. Always use `parameter=value` (no spaces around `=`) and terminate with `/` on a new line.
@@ -290,7 +425,8 @@ The parser in `fresco-common.js` handles:
 - **Array Parameters**: Fortran array syntax like `p(1:3)=`
 - **Value Preservation**: Multi-value strings preserved throughout collection and generation
 - **Partition/States Handling**: Silently stores advanced parameters (nex, pwf, copyp, bandp, ep, et, etc.) for perfect roundtrip
-- **Clean Console Output**: No error messages for expected missing fields in partition/states namelists
+- **POT Namelist Parsing**: `fresco-potential.js` parses all &POT namelists with all parameters (kp, type, shape, it, p0-p7, jl, lshape, xlvary, alvary, datafile)
+- **Clean Console Output**: No error messages for expected missing fields in partition/states/pot namelists
 
 ### Smart Parameter Collection
 
@@ -398,3 +534,14 @@ Different reaction types can have different default parameters:
    - Reset to defaults
    - View current categorization state
 - breakup.html is different, one need to use special treatment
+
+## Additional Documentation
+
+For comprehensive information about specific systems, see:
+- **`POTENTIAL_SYSTEM_README.md`** - Complete documentation of the potential management system including:
+  - All 22 potential TYPE definitions with formulas
+  - Shape options for each TYPE
+  - API reference for both modules
+  - Integration examples
+  - Troubleshooting guide
+  - FRESCO manual references

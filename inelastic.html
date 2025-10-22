@@ -22,6 +22,8 @@
     <script src="assets/js/fresco-integration.js"></script>
     <script src="assets/js/fresco-generator.js"></script>
     <script src="assets/js/fresco-partition-states.js"></script>
+    <script src="assets/js/fresco-potential.js"></script>
+    <script src="assets/js/fresco-potential-ui.js"></script>
     <script src="assets/js/fresco-shared-components.js"></script>
 </head>
 <body>
@@ -1140,93 +1142,31 @@
                 });
             }
 
-            // Potential management
-            const potentialContainer = document.getElementById('potential-container');
-            const addPotentialBtn = document.getElementById('add-potential-btn');
-            const potentialTemplate = document.getElementById('potential-template');
-            let potentialCount = 0;
-            
             // Initialize ap and at fields with the corresponding mass values
             document.getElementById('ap').value = document.getElementById('proj-mass').value;
             document.getElementById('at').value = document.getElementById('targ-mass').value;
-            
+
             // Add event listeners to update ap and at when proj-mass and targ-mass change
             document.getElementById('proj-mass').addEventListener('change', function() {
                 document.getElementById('ap').value = this.value;
             });
-            
+
             document.getElementById('targ-mass').addEventListener('change', function() {
                 document.getElementById('at').value = this.value;
             });
-            
-            // Add a nuclear potential
-            function addPotential() {
-                potentialCount++;
-                
-                // Clone the template
-                const potentialNode = document.importNode(potentialTemplate.content, true);
-                
-                // Set unique IDs and update labels
-                const potentialCard = potentialNode.querySelector('.potential-card');
-                potentialCard.dataset.potentialId = potentialCount;
-                potentialCard.querySelector('.potential-number').textContent = potentialCount;
-                
-                // Set remove button action
-                potentialCard.querySelector('.remove-potential').addEventListener('click', function(e) {
-                    e.preventDefault();
-                    potentialCard.remove();
-                    updatePotentialNumbers();
-                });
-                
-                // Add potential shape change handler
-                const potentialTypeSelect = potentialCard.querySelector('.potential-type');
-                potentialTypeSelect.addEventListener('change', function() {
-                    updatePotentialParameters(potentialCard, this.value);
-                });
-                
-                // Append to container
-                potentialContainer.appendChild(potentialNode);
-                
-                return potentialCard;
+
+            // Initialize the new potential management system
+            if (typeof window.FrescoPotentialUI !== 'undefined') {
+                window.FrescoPotentialUI.init(
+                    'inelastic',                    // Reaction type
+                    'potential-container',          // Container ID
+                    'add-potential-btn',            // Add button ID
+                    'coulomb-potential'             // Coulomb form ID
+                );
+                console.log('Potential UI initialized for inelastic scattering');
+            } else {
+                console.error('FrescoPotentialUI not available');
             }
-            
-            // Update numbering when a potential is removed
-            function updatePotentialNumbers() {
-                const potentials = potentialContainer.querySelectorAll('.potential-card');
-                potentials.forEach((potential, index) => {
-                    potential.querySelector('.potential-number').textContent = index + 1;
-                    potential.dataset.potentialId = index + 1;
-                });
-                potentialCount = potentials.length;
-            }
-            
-            // Update parameter fields based on potential type
-            function updatePotentialParameters(potentialCard, typeValue) {
-                const realParams = potentialCard.querySelector('.real-params');
-                const imagParams = potentialCard.querySelector('.imag-params');
-                
-                // Handle spin-orbit potential
-                if (typeValue === '3' || typeValue === '4') {
-                    // Update tooltips for spin-orbit potentials
-                    potentialCard.querySelector('.p1').closest('.col-md-4').querySelector('.tooltip-text').textContent = 
-                        'Strength of the spin-orbit potential (typically 0.5-10 MeV).';
-                    potentialCard.querySelector('.p2').closest('.col-md-4').querySelector('.tooltip-text').textContent = 
-                        'Radius parameter for the spin-orbit potential in fm.';
-                    potentialCard.querySelector('.p3').closest('.col-md-4').querySelector('.tooltip-text').textContent = 
-                        'Diffuseness parameter for the spin-orbit potential in fm.';
-                }
-            }
-            
-            // Make addPotential globally accessible for file upload
-            window.addPotential = addPotential;
-            
-            // Add initial potential
-            const initialPotential = addPotential();
-            
-            // Add potential button listener
-            addPotentialBtn.addEventListener('click', function() {
-                addPotential();
-            });
 
             // Target excited states management
             const addTargetStateBtn = document.getElementById('add-target-state-btn');
@@ -1545,44 +1485,19 @@
                     states: states
                 }]);
 
+                // Generate &POT namelists using the new potential system
+                const potentialSection = window.FrescoPotentialUI.generatePotentialSection();
+
                 // Build the input file content
                 let inputContent = `${header}
 NAMELIST
 ${namelistSection}
 
 ${partitionStatesSection}
- &POT kp=1 ap=${ap} at=${at} rc=${rc}  /`;
+${potentialSection}`;
 
-                // Add nuclear potentials
-                const potentials = potentialContainer.querySelectorAll('.potential-card');
-                potentials.forEach(potential => {
-                    const potType = potential.querySelector('.potential-type').value;
-                    const potShape = potential.querySelector('.potential-shape').value;
-                    const itValue = potential.querySelector('.it-field').value;
-                    const p0 = potential.querySelector('.p0').value;
-                    const p1 = potential.querySelector('.p1').value;
-                    const p2 = potential.querySelector('.p2').value;
-                    const p3 = potential.querySelector('.p3').value;
-                    const p4 = potential.querySelector('.p4').value;
-                    const p5 = potential.querySelector('.p5').value;
-                    const p6 = potential.querySelector('.p6').value;
-                    const p7 = potential.querySelector('.p7').value;
-                    
-                    let potLine = ` &POT kp=1 type=${potType} shape=${potShape} it=${itValue}`;
-                    
-                    // Add non-zero parameters
-                    if (parseFloat(p0) !== 0) potLine += ` p0=${p0}`;
-                    potLine += ` p1=${p1} p2=${p2} p3=${p3} p4=${p4} p5=${p5} p6=${p6}`;
-                    if (parseFloat(p7) !== 0) potLine += ` p7=${p7}`;
-                    potLine += `  /`;
-                    
-                    inputContent += `
-${potLine}`;
-                });
-                
-                // Add deformation potential
-                inputContent += `
- &POT kp=1 type=${defType} shape=${defShape}  /
+                // Add deformation potential (inelastic-specific)
+                inputContent += ` &POT kp=1 type=${defType} shape=${defShape}  /
    &step ib=2 ia=1 k=2 str=${beta2}  /
    &step ib=1 ia=2 k=2 str=${beta2}  /`;
                 
