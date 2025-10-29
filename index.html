@@ -57,8 +57,9 @@
     <!-- Visitor Counter -->
     <div class="container mt-4">
         <div class="text-center">
-            <p class="text-muted" id="visitor-counter">
-                <i class="fas fa-users me-2"></i>Loading visitor count...
+            <p class="text-muted">
+                <i class="fas fa-users me-2"></i><span id="visitor-text">Visitor: </span>
+                <img src="https://hits.sh/jinlei.fewbody.com/fresco.svg?style=flat&label=&color=6c757d&labelColor=transparent" alt="Visitor counter" style="vertical-align: middle; height: 20px;">
             </p>
         </div>
     </div>
@@ -187,52 +188,19 @@
 
     <!-- Visitor Counter Script -->
     <script>
-        // Visitor counter with localStorage fallback
+        // Update visitor text for local testing
         document.addEventListener('DOMContentLoaded', function() {
-            const counterElement = document.getElementById('visitor-counter');
-
-            // Check if running locally (file:// protocol) or on server
             const isLocal = window.location.protocol === 'file:';
+            const visitorText = document.getElementById('visitor-text');
 
             if (isLocal) {
                 // Use localStorage for local demonstration
                 let localCount = parseInt(localStorage.getItem('fresco-local-visits') || '0');
                 localCount++;
                 localStorage.setItem('fresco-local-visits', localCount.toString());
-                counterElement.innerHTML = `<i class="fas fa-users me-2"></i>You are visitor #${localCount.toLocaleString()} (local demo)`;
+                visitorText.textContent = `You are visitor #${localCount.toLocaleString()} (local demo)`;
             } else {
-                // Use GoatCounter or similar service when deployed
-                // For now, use a simple approach with sessionStorage to track unique visits
-                const hasVisited = sessionStorage.getItem('fresco-visited');
-
-                if (!hasVisited) {
-                    sessionStorage.setItem('fresco-visited', 'true');
-                }
-
-                // Try to use a counter service
-                const counterUrl = 'https://api.countapi.xyz/hit/jinlei.fewbody.com/fresco-visitors';
-
-                fetch(counterUrl, {
-                    method: 'GET',
-                    mode: 'cors',
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.value) {
-                        counterElement.innerHTML = `<i class="fas fa-users me-2"></i>You are visitor #${data.value.toLocaleString()}`;
-                    } else {
-                        // Fallback: Hide counter if no value
-                        counterElement.style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.log('Visitor counter service unavailable:', error);
-                    // Hide counter on production if service is unavailable
-                    counterElement.style.display = 'none';
-                });
+                visitorText.textContent = 'Visitors: ';
             }
         });
     </script>
