@@ -527,6 +527,8 @@ window.FrescoPotential = (function() {
     let parsedPotentials = null;
     let potentialCounter = 0;
     let reactionType = 'elastic';  // Default
+    let useArraySyntax = false;  // Use p(1:6) format instead of p1 p2 p3 p4 p5 p6
+    let detectedArraySyntax = false;  // Track if array syntax was found during parsing
 
     // ============================================================================
     // PUBLIC API - INITIALIZATION
@@ -546,6 +548,8 @@ window.FrescoPotential = (function() {
         potentials = [];
         parsedPotentials = null;
         potentialCounter = 0;
+        useArraySyntax = false;  // Reset to default
+        detectedArraySyntax = false;
 
         console.log(`FRESCO Potential system initialized for ${type} reaction`);
     }
@@ -575,6 +579,7 @@ window.FrescoPotential = (function() {
 
         let inPotSection = false;
         let currentPot = null;
+        detectedArraySyntax = false;  // Reset detection flag
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -582,10 +587,27 @@ window.FrescoPotential = (function() {
             // Skip comments (lines starting with 'C ' or 'c ')
             if (line.match(/^[Cc]\s/)) continue;
 
+            // Detect if array syntax is used in this file
+            if (line.match(/p\(\d+:\d+\)\s*=/i)) {
+                detectedArraySyntax = true;
+            }
+
             // Check for &POT namelist start
             if (line.match(/&POT/i)) {
                 inPotSection = true;
                 currentPot = parsePotNamelist(line);
+
+                // Check if the terminator is on the same line
+                if (line.includes('/')) {
+                    parsed.push(currentPot);
+                    currentPot = null;
+                    inPotSection = false;
+
+                    // Check if this was the last POT (kp < 0)
+                    if (parsed.length > 0 && parsed[parsed.length - 1].kp < 0) {
+                        break;
+                    }
+                }
                 continue;
             }
 
@@ -611,18 +633,28 @@ window.FrescoPotential = (function() {
                 }
             }
 
-            // Check for empty namelist
-            if (line === '&POT /') {
+            // Check for empty namelist (terminator)
+            if (line === '&POT /' || line.match(/^&POT\s*\/$/)) {
                 break;
             }
         }
 
-        parsedPotentials = parsed;
-        potentials = JSON.parse(JSON.stringify(parsed));  // Deep copy
+        // Filter out invalid potentials (those with type=null, which come from empty &POT / terminators)
+        const validPotentials = parsed.filter(pot => pot.type !== null && pot.type !== undefined);
+
+        parsedPotentials = validPotentials;
+        potentials = JSON.parse(JSON.stringify(validPotentials));  // Deep copy
         potentialCounter = potentials.length;
 
-        console.log(`Parsed ${parsed.length} potentials from input file`);
-        return parsed;
+        // Automatically set array syntax preference based on detected format
+        if (detectedArraySyntax) {
+            useArraySyntax = true;
+            console.log(`Parsed ${validPotentials.length} potentials from input file (array syntax detected, will preserve format)`);
+        } else {
+            console.log(`Parsed ${validPotentials.length} potentials from input file`);
+        }
+
+        return validPotentials;
     }
 
     /**
@@ -646,10 +678,40 @@ window.FrescoPotential = (function() {
 
     /**
      * Parse parameter assignments into a potential object
+     * Supports both individual parameters (p1=, p2=) and array syntax (p(1:6)=)
      * @private
      */
     function parseParameters(line, pot) {
-        // Match key=value pairs (handles spaces, multi-values, etc.)
+        // First handle array syntax like p(1:3)= or p(1:6)= or p(1:7)=
+        const arrayRegex = /(\w+)\((\d+):(\d+)\)\s*=\s*([\d\.\-\+eE\s]+)/g;
+        let arrayMatch;
+
+        while ((arrayMatch = arrayRegex.exec(line)) !== null) {
+            const baseKey = arrayMatch[1].toLowerCase();  // e.g., 'p'
+            const startIndex = parseInt(arrayMatch[2]);    // e.g., 1
+            const endIndex = parseInt(arrayMatch[3]);      // e.g., 6
+            const valuesStr = arrayMatch[4].trim();        // e.g., "40.0 1.2 0.65 10.0 1.2 0.5"
+
+            // Split values by whitespace
+            const values = valuesStr.split(/\s+/).filter(v => v.length > 0);
+
+            console.log(`  Parsing array syntax: ${baseKey}(${startIndex}:${endIndex}) = [${values.join(', ')}]`);
+
+            // Distribute values to p1, p2, p3, etc.
+            for (let i = 0; i < values.length && (startIndex + i) <= endIndex; i++) {
+                const paramName = `${baseKey}${startIndex + i}`;
+                const value = parseFloat(values[i]);
+                if (!isNaN(value)) {
+                    pot[paramName] = value;
+                    console.log(`    ${paramName} = ${value}`);
+                }
+            }
+
+            // Remove the matched array syntax from the line to avoid re-processing
+            line = line.replace(arrayMatch[0], '');
+        }
+
+        // Now handle regular key=value pairs
         const regex = /(\w+)\s*=\s*([^\s=]+(?:\s+[^\s=]+)*?)(?=\s+\w+\s*=|\s*$)/g;
         let match;
 
@@ -686,27 +748,47 @@ window.FrescoPotential = (function() {
 
     /**
      * Generate &POT namelist section from current potentials
+     * Supports both individual parameter format (p1= p2=) and array format (p(1:6)=)
+     * @param {boolean} useArray - If true, use p(1:N) array syntax; if false, use p1 p2 p3 format
      * @returns {string} Formatted &POT namelists
      */
-    function generatePotentialSection() {
+    function generatePotentialSection(useArray) {
         if (potentials.length === 0) {
             return '! No potentials defined\n';
         }
+
+        // Use provided parameter or fall back to module setting
+        const useArrayFormat = useArray !== undefined ? useArray : useArraySyntax;
 
         let output = '';
 
         for (let i = 0; i < potentials.length; i++) {
             const pot = potentials[i];
-            const isLast = (i === potentials.length - 1);
 
-            // Set kp negative for last potential if not already
-            const kp = isLast && pot.kp > 0 ? -Math.abs(pot.kp) : pot.kp;
+            // Use kp as-is from the potential object
+            // Do NOT automatically make the last kp negative
+            const kp = pot.kp;
 
             if (pot.type === 0) {
-                // Coulomb potential (TYPE=0)
-                output += ` &POT kp=${kp} type=0 at=${pot.at} ap=${pot.ap} rc=${pot.rc}`;
-                if (pot.ac !== undefined && pot.ac !== 0) {
-                    output += ` ac=${pot.ac}`;
+                // Coulomb potential (TYPE=0) - can use p(1:3) format
+                // In FRESCO: p(1:3) for TYPE=0 corresponds to at, ap, rc
+                // Values can be stored as either at/ap/rc OR p1/p2/p3
+                const val1 = pot.at !== undefined ? pot.at : (pot.p1 !== undefined ? pot.p1 : 0);
+                const val2 = pot.ap !== undefined ? pot.ap : (pot.p2 !== undefined ? pot.p2 : 0);
+                const val3 = pot.rc !== undefined ? pot.rc : (pot.p3 !== undefined ? pot.p3 : 0);
+
+                if (useArrayFormat) {
+                    // Array format: p(1:3)=
+                    output += ` &POT kp=${kp} type=0 shape=0 p(1:3)=${val1} ${val2} ${val3}`;
+                    if (pot.ac !== undefined && pot.ac !== 0) {
+                        output += ` ac=${pot.ac}`;
+                    }
+                } else {
+                    // Individual format: at= ap= rc=
+                    output += ` &POT kp=${kp} type=0 at=${val1} ap=${val2} rc=${val3}`;
+                    if (pot.ac !== undefined && pot.ac !== 0) {
+                        output += ` ac=${pot.ac}`;
+                    }
                 }
                 output += '  /\n';
             } else {
@@ -723,22 +805,53 @@ window.FrescoPotential = (function() {
                     output += ` it=${pot.it}`;
                 }
 
-                // Add p0 if non-zero
-                if (pot.p0 !== undefined && pot.p0 !== 0) {
-                    output += ` p0=${pot.p0}`;
-                }
-
-                // Add p1-p6 parameters
-                const params = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
-                for (const param of params) {
-                    if (pot[param] !== undefined) {
-                        output += ` ${param}=${pot[param]}`;
+                if (useArrayFormat) {
+                    // Use array syntax p(1:7)= for parameters
+                    const pValues = [];
+                    for (let j = 0; j <= 7; j++) {
+                        const paramName = j === 0 ? 'p0' : `p${j}`;
+                        pValues.push(pot[paramName] !== undefined ? pot[paramName] : 0);
                     }
-                }
 
-                // Add p7 if non-zero
-                if (pot.p7 !== undefined && pot.p7 !== 0) {
-                    output += ` p7=${pot.p7}`;
+                    // Determine range based on non-zero values
+                    let maxIndex = 7;
+                    while (maxIndex > 0 && pValues[maxIndex] === 0) {
+                        maxIndex--;
+                    }
+
+                    // Always include at least p1-p6 if any are non-zero
+                    if (maxIndex < 6 && pValues.slice(1, 7).some(v => v !== 0)) {
+                        maxIndex = 6;
+                    }
+
+                    if (maxIndex >= 1) {
+                        // Determine start index (skip p0 if it's zero)
+                        const startIndex = pValues[0] !== 0 ? 0 : 1;
+                        const endIndex = maxIndex;
+
+                        // Build the array
+                        const arrayValues = pValues.slice(startIndex, endIndex + 1);
+                        output += ` p(${startIndex === 0 ? 0 : 1}:${endIndex})=${arrayValues.join(' ')}`;
+                    }
+                } else {
+                    // Use individual parameter syntax p0= p1= p2= ...
+                    // Add p0 if non-zero
+                    if (pot.p0 !== undefined && pot.p0 !== 0) {
+                        output += ` p0=${pot.p0}`;
+                    }
+
+                    // Add p1-p6 parameters
+                    const params = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
+                    for (const param of params) {
+                        if (pot[param] !== undefined) {
+                            output += ` ${param}=${pot[param]}`;
+                        }
+                    }
+
+                    // Add p7 if non-zero
+                    if (pot.p7 !== undefined && pot.p7 !== 0) {
+                        output += ` p7=${pot.p7}`;
+                    }
                 }
 
                 // Add other special parameters if present
@@ -976,6 +1089,27 @@ window.FrescoPotential = (function() {
     }
 
     // ============================================================================
+    // OUTPUT FORMAT CONFIGURATION
+    // ============================================================================
+
+    /**
+     * Set whether to use array syntax (p(1:6)=) or individual parameters (p1= p2=) for output
+     * @param {boolean} useArray - If true, use p(1:N) array syntax; if false, use individual parameters
+     */
+    function setArraySyntax(useArray) {
+        useArraySyntax = !!useArray;
+        console.log(`Potential output format: ${useArraySyntax ? 'p(1:N) array syntax' : 'individual parameters (p1, p2, ...)'}`);
+    }
+
+    /**
+     * Get current array syntax setting
+     * @returns {boolean} True if using array syntax, false if using individual parameters
+     */
+    function getArraySyntax() {
+        return useArraySyntax;
+    }
+
+    // ============================================================================
     // RETURN PUBLIC API
     // ============================================================================
 
@@ -989,6 +1123,10 @@ window.FrescoPotential = (function() {
 
         // Generation
         generatePotentialSection,
+
+        // Output format configuration
+        setArraySyntax,
+        getArraySyntax,
 
         // CRUD operations
         addPotential,

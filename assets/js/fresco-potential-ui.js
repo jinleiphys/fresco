@@ -404,9 +404,16 @@ window.FrescoPotentialUI = (function() {
         const rcInput = document.getElementById('rc');
         const acInput = document.getElementById('ac');
 
-        if (atInput) atInput.value = potential.at || 12.0;
-        if (apInput) apInput.value = potential.ap || 4.0;
-        if (rcInput) rcInput.value = potential.rc || 1.2;
+        // Handle both at/ap/rc and p1/p2/p3 formats
+        // IMPORTANT: p(1:3) array syntax stores values as p1/p2/p3, which map to at/ap/rc
+        // Priority: p1/p2/p3 first (from array syntax), then at/ap/rc (from individual syntax)
+        const atValue = potential.p1 !== undefined ? potential.p1 : (potential.at !== undefined ? potential.at : 12.0);
+        const apValue = potential.p2 !== undefined ? potential.p2 : (potential.ap !== undefined ? potential.ap : 4.0);
+        const rcValue = potential.p3 !== undefined ? potential.p3 : (potential.rc !== undefined ? potential.rc : 1.2);
+
+        if (atInput) atInput.value = atValue;
+        if (apInput) apInput.value = apValue;
+        if (rcInput) rcInput.value = rcValue;
         if (acInput && potential.ac !== undefined) acInput.value = potential.ac;
     }
 
@@ -420,19 +427,30 @@ window.FrescoPotentialUI = (function() {
      * @returns {Object} Potential object
      */
     function extractPotentialFromCard(card) {
+        // Helper function to safely parse float, treating 0 as valid
+        const safeParseFloat = (element) => {
+            if (!element || element.value === '' || element.value === undefined) return 0;
+            return parseFloat(element.value);
+        };
+
+        const safeParseInt = (element, defaultVal = 0) => {
+            if (!element || element.value === '' || element.value === undefined) return defaultVal;
+            return parseInt(element.value);
+        };
+
         const potential = {
             kp: 1,  // Default KP
-            type: parseInt(card.querySelector('.potential-type')?.value) || 1,
-            shape: parseInt(card.querySelector('.potential-shape')?.value) || 0,
-            it: parseInt(card.querySelector('.it-field')?.value) || 0,
-            p0: parseFloat(card.querySelector('.p0')?.value) || 0,
-            p1: parseFloat(card.querySelector('.p1')?.value) || 0,
-            p2: parseFloat(card.querySelector('.p2')?.value) || 0,
-            p3: parseFloat(card.querySelector('.p3')?.value) || 0,
-            p4: parseFloat(card.querySelector('.p4')?.value) || 0,
-            p5: parseFloat(card.querySelector('.p5')?.value) || 0,
-            p6: parseFloat(card.querySelector('.p6')?.value) || 0,
-            p7: parseFloat(card.querySelector('.p7')?.value) || 0
+            type: safeParseInt(card.querySelector('.potential-type'), 1),
+            shape: safeParseInt(card.querySelector('.potential-shape'), 0),
+            it: safeParseInt(card.querySelector('.it-field'), 0),
+            p0: safeParseFloat(card.querySelector('.p0')),
+            p1: safeParseFloat(card.querySelector('.p1')),
+            p2: safeParseFloat(card.querySelector('.p2')),
+            p3: safeParseFloat(card.querySelector('.p3')),
+            p4: safeParseFloat(card.querySelector('.p4')),
+            p5: safeParseFloat(card.querySelector('.p5')),
+            p6: safeParseFloat(card.querySelector('.p6')),
+            p7: safeParseFloat(card.querySelector('.p7'))
         };
 
         return potential;
@@ -447,13 +465,19 @@ window.FrescoPotentialUI = (function() {
 
         // Add Coulomb potential if form exists
         if (coulombFormElement) {
+            // IMPORTANT: Use !== undefined to avoid treating 0 as falsy
+            const atValue = document.getElementById('at')?.value;
+            const apValue = document.getElementById('ap')?.value;
+            const rcValue = document.getElementById('rc')?.value;
+            const acValue = document.getElementById('ac')?.value;
+
             const coulomb = {
                 kp: 1,
                 type: 0,
-                at: parseFloat(document.getElementById('at')?.value) || 12.0,
-                ap: parseFloat(document.getElementById('ap')?.value) || 4.0,
-                rc: parseFloat(document.getElementById('rc')?.value) || 1.2,
-                ac: parseFloat(document.getElementById('ac')?.value) || 0.0
+                at: atValue !== undefined && atValue !== '' ? parseFloat(atValue) : 12.0,
+                ap: apValue !== undefined && apValue !== '' ? parseFloat(apValue) : 4.0,
+                rc: rcValue !== undefined && rcValue !== '' ? parseFloat(rcValue) : 1.2,
+                ac: acValue !== undefined && acValue !== '' ? parseFloat(acValue) : 0.0
             };
             potentials.push(coulomb);
         }
@@ -503,6 +527,16 @@ window.FrescoPotentialUI = (function() {
 
         // Render all parsed potentials
         renderAllPotentials(parsed);
+
+        // IMPORTANT: Re-populate Coulomb form after a delay to ensure values from file
+        // take precedence over any automatic synchronization from partition data
+        setTimeout(() => {
+            const coulombPot = parsed.find(pot => pot.type === 0);
+            if (coulombPot && coulombFormElement) {
+                populateCoulombForm(coulombPot);
+                console.log('Coulomb potential values restored from file after sync');
+            }
+        }, 100);
 
         console.log(`Loaded ${parsed.length} potentials from file`);
     }

@@ -222,15 +222,42 @@ function handleFileUpload(event, formType) {
 function parseAndPopulateForm(content, formType) {
     console.log('Parsing FRESCO input file...');
     console.log('Content preview:', content.substring(0, 500));
-    
+
     const lines = content.split('\n');
     const namelists = {};
     let currentNamelist = null;
     let potentialCount = 0;
-    
+
     // Store parsed parameters globally for use in generation
     window.parsedFrescoParameters = {};
-    
+
+    // Extract and store the header (first non-empty, non-comment line before NAMELIST)
+    let headerExtracted = false;
+    for (let i = 0; i < lines.length && !headerExtracted; i++) {
+        const line = lines[i].trim();
+        // Skip empty lines and comments
+        if (line === '' || line.startsWith('!') || line.startsWith('#') ||
+            line.startsWith('*') || line.match(/^[Cc]\s/)) continue;
+
+        // If we hit NAMELIST or a namelist start, we're done looking for header
+        if (line.toUpperCase() === 'NAMELIST' || line.startsWith('&')) {
+            headerExtracted = true;
+            break;
+        }
+
+        // This is the header line - store it
+        window.parsedFileHeader = line;
+        console.log(`Extracted header: "${line}"`);
+
+        // Populate the header field if it exists
+        const headerField = document.getElementById('header');
+        if (headerField) {
+            headerField.value = line;
+        }
+
+        headerExtracted = true;
+    }
+
     // Parse the input file
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -398,19 +425,27 @@ function populateFormFields(namelists, formType, content) {
     console.log('Populating form fields for type:', formType);
     console.log('Parsed namelists:', namelists);
 
-    // Clear existing nuclear potential cards to avoid duplicates
-    const potentialContainer = document.getElementById('potential-container');
-    if (potentialContainer) {
-        // Count how many nuclear potentials are in the uploaded file
-        const nuclearPotCount = Object.keys(namelists).filter(name => {
-            if (!name.startsWith('pot') || name === 'pot') return false;
-            const namelist = namelists[name];
-            return namelist.hasOwnProperty('type') || namelist.hasOwnProperty('p1') || namelist.hasOwnProperty('p');
-        }).length;
+    // Use new FrescoPotentialUI module if available (preferred method)
+    if (typeof window.FrescoPotentialUI !== 'undefined' &&
+        typeof window.FrescoPotentialUI.loadFromFile === 'function') {
+        console.log('Using FrescoPotentialUI module for potential parsing');
+        window.FrescoPotentialUI.loadFromFile(content);
+    } else {
+        // Fallback to old method for pages that don't use FrescoPotentialUI
+        // Clear existing nuclear potential cards to avoid duplicates
+        const potentialContainer = document.getElementById('potential-container');
+        if (potentialContainer) {
+            // Count how many nuclear potentials are in the uploaded file
+            const nuclearPotCount = Object.keys(namelists).filter(name => {
+                if (!name.startsWith('pot') || name === 'pot') return false;
+                const namelist = namelists[name];
+                return namelist.hasOwnProperty('type') || namelist.hasOwnProperty('p1') || namelist.hasOwnProperty('p');
+            }).length;
 
-        if (nuclearPotCount > 0) {
-            console.log(`Found ${nuclearPotCount} nuclear potentials in file, clearing existing potential cards`);
-            potentialContainer.innerHTML = '';
+            if (nuclearPotCount > 0) {
+                console.log(`Found ${nuclearPotCount} nuclear potentials in file, clearing existing potential cards`);
+                potentialContainer.innerHTML = '';
+            }
         }
     }
 
@@ -513,11 +548,19 @@ function populateFormFields(namelists, formType, content) {
         
         // Handle potentials specially - create dynamic potential cards
         if (namelistName.startsWith('pot') && namelistName !== 'pot') {
+            // Skip POT namelists if using FrescoPotentialUI (already handled above)
+            if (typeof window.FrescoPotentialUI !== 'undefined' &&
+                typeof window.FrescoPotentialUI.loadFromFile === 'function') {
+                console.log(`Skipping ${namelistName} - already handled by FrescoPotentialUI`);
+                return;
+            }
+
+            // Old method for pages that don't use FrescoPotentialUI
             // Check if this is a nuclear potential (has type parameter)
             // Coulomb potentials typically only have kp, ap, at, rc
             const hasType = namelist.hasOwnProperty('type');
             const hasNuclearParams = namelist.hasOwnProperty('p1') || namelist.hasOwnProperty('p');
-            
+
             if (hasType || hasNuclearParams) {
                 console.log(`Nuclear potential detected: ${namelistName}`);
                 handlePotentialData(namelistName, namelist);
@@ -881,6 +924,47 @@ function populateFormFields(namelists, formType, content) {
         showNotification('No matching form fields found. The input file format may not be compatible.', 'warning');
     } else {
         showNotification(`Successfully populated ${fieldsPopulated} form fields!`, 'success');
+    }
+
+    // IMPORTANT: After all form fields are populated (including partition data),
+    // restore Coulomb potential values from uploaded file to prevent them from being
+    // overwritten by automatic synchronization (e.g., ap/at syncing with massp/masst)
+    if (typeof window.FrescoPotential !== 'undefined' &&
+        typeof window.FrescoPotential.getAllPotentials === 'function') {
+        setTimeout(() => {
+            const potentials = window.FrescoPotential.getAllPotentials();
+            const coulombPot = potentials.find(pot => pot.type === 0);
+
+            if (coulombPot) {
+                // Restore Coulomb potential form values from parsed file data
+                const atInput = document.getElementById('at');
+                const apInput = document.getElementById('ap');
+                const rcInput = document.getElementById('rc');
+
+                // IMPORTANT: For TYPE=0 Coulomb potential with p(1:3) array syntax,
+                // values are stored as p1/p2/p3 during parsing
+                // We need to map: p1 -> at, p2 -> ap, p3 -> rc
+                const atValue = coulombPot.p1 !== undefined ? coulombPot.p1 :
+                               (coulombPot.at !== undefined ? coulombPot.at : null);
+                const apValue = coulombPot.p2 !== undefined ? coulombPot.p2 :
+                               (coulombPot.ap !== undefined ? coulombPot.ap : null);
+                const rcValue = coulombPot.p3 !== undefined ? coulombPot.p3 :
+                               (coulombPot.rc !== undefined ? coulombPot.rc : null);
+
+                if (atValue !== null && atInput) {
+                    atInput.value = atValue;
+                    console.log(`Restored Coulomb at=${atValue} from file`);
+                }
+                if (apValue !== null && apInput) {
+                    apInput.value = apValue;
+                    console.log(`Restored Coulomb ap=${apValue} from file`);
+                }
+                if (rcValue !== null && rcInput) {
+                    rcInput.value = rcValue;
+                    console.log(`Restored Coulomb rc=${rcValue} from file`);
+                }
+            }
+        }, 300);  // Delay to ensure all sync operations complete
     }
 }
 
