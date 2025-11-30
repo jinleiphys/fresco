@@ -22,7 +22,7 @@ print_banner() {
     echo ""
     echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║                                                               ║${NC}"
-    echo -e "${CYAN}║${NC}   ${BOLD}FRESCO Studio Installer${NC}                                    ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}   ${BOLD}FRESCO Studio Installer${NC}                                     ${CYAN}║${NC}"
     echo -e "${CYAN}║${NC}   Modern GUI for FRESCO Coupled Channels Calculations         ${CYAN}║${NC}"
     echo -e "${CYAN}║                                                               ║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════╝${NC}"
