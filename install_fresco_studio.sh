@@ -318,11 +318,58 @@ run_setup() {
 
     cd "$INSTALL_DIR"
 
-    # Make setup script executable
-    chmod +x setup_gui.sh
+    # Create conda environment with Python 3.11 (required for PySide6>=6.5.0)
+    # PySide6 6.5.0+ does not have wheels for Python 3.13+
+    print_step "Creating conda environment with Python 3.11..."
 
-    # Run setup
-    ./setup_gui.sh
+    # Remove existing environment if it exists
+    conda env remove -n fresco_gui -y 2>/dev/null || true
+
+    # Create new environment with Python 3.11
+    conda create -n fresco_gui python=3.11 -y
+
+    # Activate the environment
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate fresco_gui
+
+    # Install PySide6 and other dependencies
+    print_step "Installing Python dependencies..."
+    pip install "PySide6>=6.5.0"
+
+    # Install additional requirements if requirements.txt exists
+    if [ -f "requirements.txt" ]; then
+        pip install -r requirements.txt
+    fi
+
+    # Install fresco_gui package if setup.py exists
+    if [ -f "fresco_gui/setup.py" ]; then
+        pip install -e fresco_gui/
+    elif [ -f "setup.py" ]; then
+        pip install -e .
+    fi
+
+    # Make setup script executable (for reference)
+    if [ -f "setup_gui.sh" ]; then
+        chmod +x setup_gui.sh
+    fi
+
+    # Compile FRESCO if compile script exists
+    if [ -f "compile_fresco.sh" ]; then
+        print_step "Compiling FRESCO..."
+        chmod +x compile_fresco.sh
+        ./compile_fresco.sh
+    elif [ -d "fresco_code" ]; then
+        print_step "Compiling FRESCO..."
+        cd fresco_code
+        if [ -f "Makefile" ]; then
+            make clean 2>/dev/null || true
+            make
+        elif [ -f "source/fresco.f" ]; then
+            gfortran -O2 -o fresco source/*.f 2>/dev/null || \
+            gfortran -O2 -std=legacy -o fresco source/*.f
+        fi
+        cd "$INSTALL_DIR"
+    fi
 
     print_success "Setup completed!"
 }

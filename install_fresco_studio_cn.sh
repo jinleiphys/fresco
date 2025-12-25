@@ -318,11 +318,58 @@ run_setup() {
 
     cd "$INSTALL_DIR"
 
-    # 使安装脚本可执行
-    chmod +x setup_gui.sh
+    # 创建使用 Python 3.11 的 conda 环境（PySide6>=6.5.0 需要）
+    # PySide6 6.5.0+ 没有 Python 3.13+ 的 wheels
+    print_step "创建 Python 3.11 的 conda 环境..."
 
-    # 运行安装
-    ./setup_gui.sh
+    # 如果环境已存在则删除
+    conda env remove -n fresco_gui -y 2>/dev/null || true
+
+    # 创建新环境并指定 Python 3.11
+    conda create -n fresco_gui python=3.11 -y
+
+    # 激活环境
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate fresco_gui
+
+    # 安装 PySide6 和其他依赖
+    print_step "安装 Python 依赖..."
+    pip install "PySide6>=6.5.0"
+
+    # 如果存在 requirements.txt 则安装额外依赖
+    if [ -f "requirements.txt" ]; then
+        pip install -r requirements.txt
+    fi
+
+    # 如果存在 setup.py 则安装 fresco_gui 包
+    if [ -f "fresco_gui/setup.py" ]; then
+        pip install -e fresco_gui/
+    elif [ -f "setup.py" ]; then
+        pip install -e .
+    fi
+
+    # 使安装脚本可执行（供参考）
+    if [ -f "setup_gui.sh" ]; then
+        chmod +x setup_gui.sh
+    fi
+
+    # 如果存在编译脚本则编译 FRESCO
+    if [ -f "compile_fresco.sh" ]; then
+        print_step "编译 FRESCO..."
+        chmod +x compile_fresco.sh
+        ./compile_fresco.sh
+    elif [ -d "fresco_code" ]; then
+        print_step "编译 FRESCO..."
+        cd fresco_code
+        if [ -f "Makefile" ]; then
+            make clean 2>/dev/null || true
+            make
+        elif [ -f "source/fresco.f" ]; then
+            gfortran -O2 -o fresco source/*.f 2>/dev/null || \
+            gfortran -O2 -std=legacy -o fresco source/*.f
+        fi
+        cd "$INSTALL_DIR"
+    fi
 
     print_success "配置完成！"
 }
