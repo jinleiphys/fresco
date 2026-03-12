@@ -361,12 +361,21 @@ run_setup() {
     elif [ -d "fresco_code" ]; then
         print_step "编译 FRESCO..."
         cd fresco_code
-        if [ -f "Makefile" ]; then
+        if [ -f "source/makefile" ] || [ -f "source/Makefile" ]; then
+            make -C source clean 2>/dev/null || true
+            make -C source
+            cp source/fresco . 2>/dev/null || true
+        elif [ -f "Makefile" ]; then
             make clean 2>/dev/null || true
             make
         elif [ -f "source/fresco.f" ]; then
-            gfortran -O2 -o fresco source/*.f 2>/dev/null || \
-            gfortran -O2 -std=legacy -o fresco source/*.f
+            # 排除 include 文件（bpmfus.f, usescatwf.f, veffpot.f, lanecoup.f）
+            # 以及非独立编译文件（fresco_std.f, sfresco_std.f, sfresco.f, minuit-cern.f）
+            # 这些是被其他源文件 include 的代码片段，不能作为独立编译单元
+            EXCLUDE="bpmfus.f|usescatwf.f|veffpot.f|lanecoup.f|fresco_std.f|sfresco_std.f|sfresco.f|minuit-cern.f"
+            SRC_FILES=$(ls source/*.f | grep -Ev "$EXCLUDE")
+            gfortran -O2 -std=legacy -fallow-argument-mismatch -o fresco $SRC_FILES 2>&1 || \
+            gfortran -O2 -std=legacy -o fresco $SRC_FILES
         fi
         cd "$INSTALL_DIR"
     fi
