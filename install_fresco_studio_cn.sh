@@ -369,10 +369,14 @@ run_setup() {
             make clean 2>/dev/null || true
             make
         elif [ -f "source/fresco.f" ]; then
-            # 排除 include 文件（bpmfus.f, usescatwf.f, veffpot.f, lanecoup.f）
-            # 以及非独立编译文件（fresco_std.f, sfresco_std.f, sfresco.f, minuit-cern.f）
-            # 这些是被其他源文件 include 的代码片段，不能作为独立编译单元
-            EXCLUDE="bpmfus.f|usescatwf.f|veffpot.f|lanecoup.f|fresco_std.f|sfresco_std.f|sfresco.f|minuit-cern.f"
+            # 排除 include 文件（被其他源文件 include 的代码片段）：
+            #   bpmfus.f, usescatwf.f, veffpot.f, lanecoup.f
+            # 排除 all-in-one 编译文件：fresco_std.f, sfresco_std.f
+            # 排除 sfresco 专用文件：sfresco.f, minuit-cern.f, minuit.f
+            # 排除重复的 SECOND() 实现（只保留 cpu_time.f）：
+            #   etime.f, system_clock.f
+            # 排除可选的 flush（makefile 中已注释）：flush.f
+            EXCLUDE="bpmfus.f|usescatwf.f|veffpot.f|lanecoup.f|fresco_std.f|sfresco_std.f|sfresco.f|minuit-cern.f|minuit.f|etime.f|system_clock.f|flush.f"
             SRC_FILES=$(ls source/*.f | grep -Ev "$EXCLUDE")
             gfortran -O2 -std=legacy -fallow-argument-mismatch -o fresco $SRC_FILES 2>&1 || \
             gfortran -O2 -std=legacy -o fresco $SRC_FILES
