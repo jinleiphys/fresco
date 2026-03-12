@@ -363,23 +363,11 @@ run_setup() {
         cd fresco_code
         if [ -f "source/makefile" ] || [ -f "source/Makefile" ]; then
             make -C source clean 2>/dev/null || true
-            make -C source
+            make -C source fresco
             cp source/fresco . 2>/dev/null || true
         elif [ -f "Makefile" ]; then
             make clean 2>/dev/null || true
             make
-        elif [ -f "source/fresco.f" ]; then
-            # Exclude include files (code fragments included by other source files):
-            #   bpmfus.f, usescatwf.f, veffpot.f, lanecoup.f
-            # Exclude all-in-one compilation files: fresco_std.f, sfresco_std.f
-            # Exclude sfresco-only files: sfresco.f, minuit-cern.f, minuit.f
-            # Exclude duplicate SECOND() implementations (keep only cpu_time.f):
-            #   etime.f, system_clock.f
-            # Exclude optional flush (commented out in makefile): flush.f
-            EXCLUDE="bpmfus.f|usescatwf.f|veffpot.f|lanecoup.f|fresco_std.f|sfresco_std.f|sfresco.f|minuit-cern.f|minuit.f|etime.f|system_clock.f|flush.f"
-            SRC_FILES=$(ls source/*.f | grep -Ev "$EXCLUDE")
-            gfortran -O2 -std=legacy -fallow-argument-mismatch -o fresco $SRC_FILES 2>&1 || \
-            gfortran -O2 -std=legacy -o fresco $SRC_FILES
         fi
         cd "$INSTALL_DIR"
     fi
