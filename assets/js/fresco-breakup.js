@@ -364,7 +364,60 @@ document.addEventListener('DOMContentLoaded', function() {
         // Parse &BIN namelists
         parseBinNamelists(content);
 
+        // Parse &POTENTIAL namelists
+        parsePotentialNamelists(content);
+
         console.log('✅ CDCC file parsing complete');
+    }
+
+    function parsePotentialNamelists(content) {
+        // Match all &POTENTIAL ... / blocks
+        const potRegex = /&POTENTIAL\s+([\s\S]*?)\s*\//gi;
+        let match;
+
+        while ((match = potRegex.exec(content)) !== null) {
+            const potContent = match[1].trim();
+            if (!potContent) continue;
+
+            // Extract key=value pairs
+            const params = {};
+            const paramRegex = /(\w+)\s*=\s*([^\s=]+)/g;
+            let pm;
+            while ((pm = paramRegex.exec(potContent)) !== null) {
+                const key = pm[1].toLowerCase();
+                let val = pm[2].replace(/^['"]|['"]$/g, '').trim();
+                params[key] = val;
+            }
+
+            const part = (params.part || '').toLowerCase();
+            console.log(`📋 Parsed POTENTIAL part='${part}':`, params);
+
+            // Map to form field IDs based on part name
+            const fieldMap = {
+                'proj': { prefix: 'proj-targ', fields: ['a1', 'a2', 'rc'] },
+                'core': { prefix: 'core-targ', fields: ['a1', 'a2', 'rc', 'v', 'vr0', 'a', 'w', 'wr0', 'aw'] },
+                'valence': { prefix: 'val-targ', fields: ['a1', 'a2', 'rc', 'v', 'vr0', 'a', 'w', 'wr0', 'aw'] },
+                'gs': { prefix: 'gs', fields: ['a1', 'a2', 'rc', 'v', 'vr0', 'a', 'vso', 'rso0', 'aso'] },
+                'bi': { prefix: 'ex', fields: ['a1', 'a2', 'rc', 'v', 'vr0', 'a', 'vso', 'rso0', 'aso'] },
+            };
+
+            const mapping = fieldMap[part];
+            if (!mapping) {
+                console.log(`⚠️  Unknown POTENTIAL part: ${part}`);
+                continue;
+            }
+
+            for (const fieldName of mapping.fields) {
+                if (params[fieldName] !== undefined) {
+                    const fieldId = `${mapping.prefix}-${fieldName}`;
+                    const el = document.getElementById(fieldId);
+                    if (el) {
+                        el.value = params[fieldName];
+                        console.log(`  ✅ Set ${fieldId} = ${params[fieldName]}`);
+                    }
+                }
+            }
+        }
     }
 
     function parseNucleusNamelists(content) {

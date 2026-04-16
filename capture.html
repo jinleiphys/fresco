@@ -932,7 +932,7 @@
                 moveBtn.innerHTML = `<i class="fas fa-arrow-${moveToSection === 'advanced' ? 'down' : 'up'}"></i>`;
                 moveBtn.title = `Move to ${moveToSection} section`;
                 moveBtn.onclick = () => {
-                    parameterManager.moveParameter(param.name, moveToSection);
+                    parameterManager.moveParameter(param.name, moveToSection === 'general');
                     updateParameterDisplay();
                 };
                 
@@ -1118,7 +1118,7 @@ NAMELIST
 ${namelistSection}
 
 ${partitionStatesSection}
- &Pot kp=1 type= 0 shape= 0 p(1:3)=   ${targMass}.0000   0.0000   ${rc} /                                     
+ &Pot kp=1 type= 0 shape= 0 p(1:3)=   ${parseFloat(targMass).toFixed(4)}   0.0000   ${rc} /                                     
  &Pot kp=1 type= 1 shape= 0 p(1:3)=   ${vDepth}   ${vRadius}   ${vDiffuse} /`;
 
             // Add imaginary potential if W > 0
@@ -1135,7 +1135,7 @@ ${partitionStatesSection}
             
             // Add bound state potential
             inputContent += `                                     
- &Pot kp=2 type= 0 shape= 0 p(1:3)=   ${targMass}.0000   0.0000   ${rc} /                                     
+ &Pot kp=2 type= 0 shape= 0 p(1:3)=   ${parseFloat(targMass).toFixed(4)}   0.0000   ${rc} /                                     
  &Pot kp=2 type= 1 shape= 0 p(1:3)=   ${bsVDepth}   ${bsVRadius}   ${bsVDiffuse} /                                     
  &Pot kp=2 type= 3 shape= 0 p(1:3)=   ${bsVsoDepth}   ${bsVsoRadius}   ${bsVsoDiffuse} /                                     
  &pot / 

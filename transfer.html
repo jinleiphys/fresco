@@ -1699,7 +1699,7 @@ ${partitionStatesSection}
                 moveBtn.innerHTML = `<i class="fas fa-arrow-${moveToSection === 'advanced' ? 'right' : 'left'}"></i>`;
                 moveBtn.title = `Move to ${moveToSection}`;
                 moveBtn.onclick = () => {
-                    parameterManager.moveParameter(param.name, moveToSection);
+                    parameterManager.moveParameter(param.name, moveToSection === 'general');
                     updateParameterDisplay();
                 };
                 

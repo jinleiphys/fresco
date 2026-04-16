@@ -219,6 +219,14 @@ function handleFileUpload(event, formType) {
     reader.readAsText(file);
 }
 
+function parseFortranFloat(str) {
+    // Convert Fortran D-exponent notation (1.0D-3, 2.5D+2) to standard E notation
+    if (typeof str === 'string') {
+        str = str.replace(/[dD]([+\-]?\d)/g, 'E$1');
+    }
+    return parseFloat(str);
+}
+
 function parseAndPopulateForm(content, formType) {
     console.log('Parsing FRESCO input file...');
     console.log('Content preview:', content.substring(0, 500));
@@ -227,6 +235,12 @@ function parseAndPopulateForm(content, formType) {
     const namelists = {};
     let currentNamelist = null;
     let potentialCount = 0;
+
+    // Clear cached partition/states data from any previous upload
+    if (window.FrescoPartitionStates && typeof window.FrescoPartitionStates.clearParsedData === 'function') {
+        window.FrescoPartitionStates.clearParsedData();
+    }
+    window.parsedPartitionStatesData = null;
 
     // Store parsed parameters globally for use in generation
     window.parsedFrescoParameters = {};
@@ -373,7 +387,7 @@ function parseParametersFromLine(line, namelistObj) {
                     
                     // Look ahead for more numeric values that belong to this array
                     let j = i + 1;
-                    while (j < tokens.length && !tokens[j].includes('=') && /^[\d\.\-\+eE]+$/.test(tokens[j])) {
+                    while (j < tokens.length && !tokens[j].includes('=') && /^[\d\.\-\+eEdD]+$/.test(tokens[j])) {
                         values.push(tokens[j]);
                         j++;
                     }
@@ -399,7 +413,7 @@ function parseParametersFromLine(line, namelistObj) {
                     const multiValueParams = ['elab', 'ek', 'thetas', 'energies']; // Parameters that can have multiple values
 
                     if (multiValueParams.includes(key.toLowerCase())) {
-                        while (j < tokens.length && !tokens[j].includes('=') && /^[\d\.\-\+eE]+$/.test(tokens[j])) {
+                        while (j < tokens.length && !tokens[j].includes('=') && /^[\d\.\-\+eEdD]+$/.test(tokens[j])) {
                             values.push(tokens[j]);
                             j++;
                         }
@@ -418,6 +432,74 @@ function parseParametersFromLine(line, namelistObj) {
             }
         }
         i++;
+    }
+}
+
+/**
+ * Populate fixed optical potential form fields from parsed POT namelists.
+ * This handles pages (capture, transfer) that use hardcoded form fields
+ * instead of the dynamic FrescoPotentialUI system.
+ */
+function populateFixedPotentialFields(namelists, formType) {
+    // Group parsed POTs by kp and type
+    const potsByKpType = {};
+    for (const [name, data] of Object.entries(namelists)) {
+        if (!name.startsWith('pot') || name === 'pot') continue;
+        if (!data || Object.keys(data).length === 0) continue;
+        const kp = parseInt(data.kp) || 1;
+        const type = parseInt(data.type) || 0;
+        const key = `${kp}-${type}`;
+        potsByKpType[key] = data;
+    }
+
+    if (formType === 'capture') {
+        // Capture page: kp=1 is optical, kp=2 is bound state
+        // kp=1, type=0: Coulomb (rc)
+        const coul = potsByKpType['1-0'];
+        if (coul && coul.rc) setField('rc', coul.rc);
+        // kp=1, type=1: Volume (V, r0, a)
+        const vol = potsByKpType['1-1'];
+        if (vol) {
+            setField('v-depth', vol.p1); setField('v-radius', vol.p2); setField('v-diffuse', vol.p3);
+        }
+        // kp=1, type=2: Surface (W, rW, aW)
+        const surf = potsByKpType['1-2'];
+        if (surf) {
+            setField('w-depth', surf.p1 || surf.p4); setField('w-radius', surf.p2 || surf.p5); setField('w-diffuse', surf.p3 || surf.p6);
+        }
+        // kp=1, type=3: Spin-orbit
+        const so = potsByKpType['1-3'];
+        if (so) {
+            setField('vso-depth', so.p1); setField('vso-radius', so.p2); setField('vso-diffuse', so.p3);
+        }
+    } else if (formType === 'transfer') {
+        // Transfer page: kp=1 initial, kp=2 final, kp=3/4 binding
+        const fieldSets = {
+            '1-0': { 'rc-initial': 'rc' },
+            '1-1': { 'v-initial': 'p1', 'rv-initial': 'p2', 'av-initial': 'p3', 'w-initial': 'p4', 'rw-initial': 'p5', 'aw-initial': 'p6' },
+            '1-3': { 'vso-initial': 'p1', 'rso-initial': 'p2', 'aso-initial': 'p3' },
+            '2-0': { 'rc-final': 'rc' },
+            '2-1': { 'v-final': 'p1', 'rv-final': 'p2', 'av-final': 'p3', 'w-final': 'p4', 'rw-final': 'p5', 'aw-final': 'p6' },
+            '2-3': { 'vso-final': 'p1', 'rso-final': 'p2', 'aso-final': 'p3' },
+            '3-1': { 'v-bind': 'p1', 'rv-bind': 'p2', 'av-bind': 'p3' },
+            '3-3': { 'vso-bind': 'p1', 'rso-bind': 'p2', 'aso-bind': 'p3' },
+        };
+        for (const [key, mapping] of Object.entries(fieldSets)) {
+            const pot = potsByKpType[key];
+            if (!pot) continue;
+            for (const [fieldId, paramKey] of Object.entries(mapping)) {
+                if (pot[paramKey] !== undefined) setField(fieldId, pot[paramKey]);
+            }
+        }
+    }
+
+    function setField(id, value) {
+        if (value === undefined || value === null) return;
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value;
+            console.log(`  ✅ Fixed potential: ${id} = ${value}`);
+        }
     }
 }
 
@@ -448,6 +530,10 @@ function populateFormFields(namelists, formType, content) {
             }
         }
     }
+
+    // For pages with fixed optical potential form fields (capture, transfer),
+    // also populate those fields from parsed POT data
+    populateFixedPotentialFields(namelists, formType);
 
     // Use FrescoNamelist configuration if available
     let useAdvancedConfig = false;
@@ -594,14 +680,27 @@ function populateFormFields(namelists, formType, content) {
             window.parsedPartitionStatesData.partitions.push(namelist);
 
             // Only populate fields that exist (no error logging for missing fields)
-            const partitionFieldMappings = {
-                'namep': 'projectile',
-                'massp': 'proj-mass',
-                'zp': 'proj-z',
-                'namet': 'target',
-                'masst': 'targ-mass',
-                'zt': 'targ-z'
-            };
+            // For transfer pages: 1st partition -> initial, 2nd -> final
+            const partitionIndex = window.parsedPartitionStatesData.partitions.length;
+            let partitionFieldMappings;
+            if (formType === 'transfer' && partitionIndex === 1) {
+                // First partition -> initial channel
+                partitionFieldMappings = {
+                    'namep': 'proj-initial', 'massp': 'proj-mass-initial', 'zp': 'proj-z-initial',
+                    'namet': 'targ-initial', 'masst': 'targ-mass-initial', 'zt': 'targ-z-initial'
+                };
+            } else if (formType === 'transfer' && partitionIndex === 2) {
+                // Second partition -> final channel
+                partitionFieldMappings = {
+                    'namep': 'proj-final', 'massp': 'proj-mass-final', 'zp': 'proj-z-final',
+                    'namet': 'targ-final', 'masst': 'targ-mass-final', 'zt': 'targ-z-final'
+                };
+            } else {
+                partitionFieldMappings = {
+                    'namep': 'projectile', 'massp': 'proj-mass', 'zp': 'proj-z',
+                    'namet': 'target', 'masst': 'targ-mass', 'zt': 'targ-z'
+                };
+            }
 
             Object.keys(partitionFieldMappings).forEach(param => {
                 if (namelist.hasOwnProperty(param)) {
@@ -628,10 +727,15 @@ function populateFormFields(namelists, formType, content) {
             window.parsedPartitionStatesData.states.push(namelist);
 
             // Only populate fields that exist (no error logging for missing fields)
-            const statesFieldMappings = {
-                'jp': 'proj-spin',
-                'jt': 'targ-spin'
-            };
+            const statesIndex = window.parsedPartitionStatesData.states.length;
+            let statesFieldMappings;
+            if (formType === 'transfer' && statesIndex === 1) {
+                statesFieldMappings = { 'jp': 'proj-spin-initial', 'jt': 'targ-spin-initial' };
+            } else if (formType === 'transfer' && statesIndex === 2) {
+                statesFieldMappings = { 'jp': 'proj-spin-final', 'jt': 'targ-spin-final' };
+            } else {
+                statesFieldMappings = { 'jp': 'proj-spin', 'jt': 'targ-spin' };
+            }
 
             Object.keys(statesFieldMappings).forEach(param => {
                 if (namelist.hasOwnProperty(param)) {
@@ -1164,8 +1268,10 @@ if (typeof module !== 'undefined' && module.exports) {
         downloadFile,
         formatNumber,
         handleFileUpload,
+        parseFortranFloat,
         parseAndPopulateForm,
         populateFormFields,
+        populateFixedPotentialFields,
         createUploadButton,
         FrescoUtils
     };

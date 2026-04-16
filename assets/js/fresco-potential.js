@@ -681,9 +681,18 @@ window.FrescoPotential = (function() {
      * Supports both individual parameters (p1=, p2=) and array syntax (p(1:6)=)
      * @private
      */
+    function parseFortranNumber(str) {
+        // Convert Fortran D-exponent notation (1.0D-3, 2.5D+2) to standard E notation
+        if (typeof str === 'string') {
+            str = str.replace(/[dD]([+\-]?\d)/g, 'E$1');
+        }
+        return parseFloat(str);
+    }
+
     function parseParameters(line, pot) {
         // First handle array syntax like p(1:3)= or p(1:6)= or p(1:7)=
-        const arrayRegex = /(\w+)\((\d+):(\d+)\)\s*=\s*([\d\.\-\+eE\s]+)/g;
+        // Include D/d for Fortran exponent notation
+        const arrayRegex = /(\w+)\((\d+):(\d+)\)\s*=\s*([\d\.\-\+eEdD\s]+)/g;
         let arrayMatch;
 
         while ((arrayMatch = arrayRegex.exec(line)) !== null) {
@@ -700,7 +709,7 @@ window.FrescoPotential = (function() {
             // Distribute values to p1, p2, p3, etc.
             for (let i = 0; i < values.length && (startIndex + i) <= endIndex; i++) {
                 const paramName = `${baseKey}${startIndex + i}`;
-                const value = parseFloat(values[i]);
+                const value = parseFortranNumber(values[i]);
                 if (!isNaN(value)) {
                     pot[paramName] = value;
                     console.log(`    ${paramName} = ${value}`);
@@ -726,12 +735,12 @@ window.FrescoPotential = (function() {
                 pot[key] = false;
             }
             // Handle numeric values (including multi-value like "6.9 11.0 49.35")
-            else if (!isNaN(parseFloat(value))) {
+            else if (!isNaN(parseFortranNumber(value))) {
                 // Check if it's a multi-value string
                 if (value.includes(' ')) {
                     pot[key] = value;  // Keep as string
                 } else {
-                    pot[key] = parseFloat(value);
+                    pot[key] = parseFortranNumber(value);
                 }
             }
             // Handle string values
@@ -969,13 +978,14 @@ window.FrescoPotential = (function() {
             Object.assign(potentials[index], updates);
         } else {
             // Add Coulomb potential at the beginning
+            // Use ?? (nullish coalescing) instead of || to allow zero values
             potentials.unshift({
                 kp: 1,
                 type: 0,
-                at: updates.at || 12.0,
-                ap: updates.ap || 4.0,
-                rc: updates.rc || 1.2,
-                ac: updates.ac || 0.0
+                at: updates.at ?? 12.0,
+                ap: updates.ap ?? 4.0,
+                rc: updates.rc ?? 1.2,
+                ac: updates.ac ?? 0.0
             });
         }
     }

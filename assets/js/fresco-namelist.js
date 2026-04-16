@@ -912,7 +912,9 @@ window.FrescoNamelist = {
             
             // For basic parameters from General section: include if non-empty (even if equals default)
             // For advanced parameters: only include if different from default (unless required)
-            if (!isBasicParam && !paramConfig.required && value === defaultValue) continue;
+            // Use loose equality (==) to handle string/number/boolean type mismatches
+            // from <select> elements (e.g., '0' == 0, 'true' == true)
+            if (!isBasicParam && !paramConfig.required && value == defaultValue) continue;
             
             // Format the parameter value
             let formattedValue = value;
